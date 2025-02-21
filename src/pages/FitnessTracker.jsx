@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, BarChart2, User, ChevronRight, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Home, BarChart2, User, ChevronRight, Plus, Edit2, Trash2, Clock, Hash } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 const Progress = ({ value }) => (
     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -19,6 +19,26 @@ const Progress = ({ value }) => (
     });
   };
 
+  const formatChartDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const MEASUREMENT_TYPES = {
+    COUNT: 'count',
+    TIME: 'time'
+  };
+  
+  const TIME_UNITS = [
+    { label: 'Seconds', value: 'sec' },
+    { label: 'Minutes', value: 'min' },
+    { label: 'Hours', value: 'hr' }
+  ];
+  
+
 const FitnessTracker = () => {
     const [currentPage, setCurrentPage] = useState('home');
   const [editingActivity, setEditingActivity] = useState(null);
@@ -26,20 +46,26 @@ const FitnessTracker = () => {
     {
       date: 'Today',
       exercises: [
-        { name: 'Push ups', reps: '20x', weight: '' },
-        { name: 'Sitdowns', reps: '20x', weight: '' },
-        { name: 'Back exercise', weight: '25kg', sets: '3x10' },
-        { name: 'Legs exercise', weight: '12kg', sets: '3x12' }
-      ]
-    },
-    {
-      date: 'Feb 17',
-      exercises: [
-        { name: 'Push ups', reps: '20x', weight: '' },
-        { name: 'Sitdowns', reps: '20x', weight: '' }
+        { 
+          name: 'Push ups',
+          type: 'count',
+          sets: [
+            { reps: 20, weight: '' },
+            { reps: 15, weight: '' }
+          ]
+        },
+        {
+          name: 'Plank',
+          type: 'time',
+          sets: [
+            { duration: 60, unit: 'sec' },
+            { duration: 45, unit: 'sec' }
+          ]
+        }
       ]
     }
   ];
+  
 
   const [activities, setActivities] = useState(initialActivities);
   const [newActivity, setNewActivity] = useState({
@@ -53,6 +79,62 @@ const FitnessTracker = () => {
     const local = JSON.parse(localStorage.getItem('activities')) || [];
     setActivities(local.length ? local : initialActivities);
   }, []);
+
+  const SetInput = ({ set, index, type, onUpdate, onDelete }) => {
+    return (
+      <div className="flex items-center gap-4 mb-2">
+        <span className="text-sm text-gray-500">Set {index + 1}</span>
+        
+        {type === MEASUREMENT_TYPES.COUNT ? (
+          <>
+            <input
+              type="number"
+              className="w-20 p-2 border rounded"
+              placeholder="Reps"
+              value={set.reps || ''}
+              onChange={(e) => onUpdate(index, { ...set, reps: parseInt(e.target.value) })}
+            />
+            <span>reps</span>
+          </>
+        ) : (
+          <>
+            <input
+              type="number"
+              className="w-20 p-2 border rounded"
+              placeholder="Time"
+              value={set.duration || ''}
+              onChange={(e) => onUpdate(index, { ...set, duration: parseInt(e.target.value) })}
+            />
+            <select
+              className="p-2 border rounded"
+              value={set.unit}
+              onChange={(e) => onUpdate(index, { ...set, unit: e.target.value })}
+            >
+              {TIME_UNITS.map(unit => (
+                <option key={unit.value} value={unit.value}>{unit.label}</option>
+              ))}
+            </select>
+          </>
+        )}
+        
+        <input
+          type="number"
+          className="w-20 p-2 border rounded"
+          placeholder="Weight"
+          value={set.weight || ''}
+          onChange={(e) => onUpdate(index, { ...set, weight: e.target.value })}
+        />
+        <span>kg</span>
+        
+        <button
+          onClick={() => onDelete(index)}
+          className="text-red-500"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  };
 
   const HomePage = () => (
     <div className="main-block p-6">
@@ -68,12 +150,37 @@ const FitnessTracker = () => {
                 <span className="text-xl">{exercise.name}</span>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <span className="text-xl">
-                      {exercise.reps || `${exercise.sets}`}
-                    </span>
-                    {exercise.weight && (
-                      <div className="text-sm text-gray-600">
-                        Weight: {exercise.weight}
+                    {exercise.type === MEASUREMENT_TYPES.COUNT ? (
+                      <div>
+                        {(exercise.sets || []).map((set, setIndex) => (
+                          <div key={setIndex} className="text-gray-600">
+                            {setIndex === 0 && (
+                              <span className="text-xl">
+                                {(exercise.sets || []).length}x
+                              </span>
+                            )}
+                            <div className="text-sm">
+                              Set {setIndex + 1}: {set.reps} reps
+                              {set.weight && ` (${set.weight}kg)`}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div>
+                        {(exercise.sets || []).map((set, setIndex) => (
+                          <div key={setIndex} className="text-gray-600">
+                            {setIndex === 0 && (
+                              <span className="text-xl">
+                                {(exercise.sets || []).length}x
+                              </span>
+                            )}
+                            <div className="text-sm">
+                              Set {setIndex + 1}: {set.duration} {set.unit}
+                              {set.weight && ` (${set.weight}kg)`}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -225,98 +332,79 @@ const FitnessTracker = () => {
     const [activity, setActivity] = useState({
       title: '',
       date: new Date().toISOString().split('T')[0],
-      reps: '',
-      weight: ''
+      type: MEASUREMENT_TYPES.COUNT,
+      sets: [{ reps: '', weight: '' }]
     });
-
+  
     const [showSuggestions, setShowSuggestions] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
-
-  const getUniqueExercises = () => {
-    const local = JSON.parse(localStorage.getItem('activities')) || [];
-    const exercises = local.flatMap(day => 
-      day.exercises.map(ex => ({
-        name: ex.name,
-        reps: ex.reps || '',
-        weight: ex.weight || ''
-      }))
-    );
-    
-    // Удаляем дубликаты по имени
-    return Array.from(new Map(exercises.map(ex => [ex.name, ex])).values());
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setActivity(prev => ({
-      ...prev,
-      [name]: value
-    }));
-
-    if (name === 'title') {
-      // Фильтруем подсказки при вводе
-      const exerciseSuggestions = getUniqueExercises()
-        .filter(ex => ex.name.toLowerCase().includes(value.toLowerCase()));
-      setSuggestions(exerciseSuggestions);
-      setShowSuggestions(exerciseSuggestions.length > 0);
-    }
-  };
-
-    const handleCreateNewActivity = () => {
-      if (!activity.title || !activity.date) return;
+    const [suggestions, setSuggestions] = useState([]);
+  
+    const getUniqueExercises = () => {
       const local = JSON.parse(localStorage.getItem('activities')) || [];
-      const activities = local.length ? local : initialActivities;
-  
-      const newExercise = {
-        name: activity.title,
-        reps: activity.reps ? `${activity.reps}x` : null,
-        weight: activity.weight ? `${activity.weight}kg` : '',
-      };
-  
-      const existingDateIndex = activities.findIndex(day => day.date === activity.date);
-  
-      if (existingDateIndex !== -1) {
-        setActivities((prevActivities) => {
-          const updatedActivities = [...prevActivities];
-          updatedActivities[existingDateIndex].exercises.push(newExercise);
-          localStorage.setItem('activities', JSON.stringify(updatedActivities));
-          return updatedActivities; // Возвращаем новое состояние
-        });
-      } else {
-        setActivities((prevActivities) => {
-          const newActivities = [
-            ...prevActivities,
-            {
-              date: activity.date,
-              exercises: [newExercise],
-            },
-          ];
-          localStorage.setItem('activities', JSON.stringify(newActivities));
-          return newActivities; // Возвращаем новое состояние
-        });
-      }
-
-      
-     
-      setActivity({
-        title: '',
-        date: new Date().toISOString().split('T')[0],
-        reps: '',
-        weight: ''
-      });
-      setCurrentPage('home');
+      const exercises = local.flatMap(day => 
+        day.exercises.map(ex => ({
+          name: ex.name,
+          type: ex.type || MEASUREMENT_TYPES.COUNT,
+          sets: ex.sets || []
+        }))
+      );
+      return Array.from(new Map(exercises.map(ex => [ex.name, ex])).values());
     };
-
+  
+    const handleInputChange = (e) => {
+      const { name, value } = e.target;
+      setActivity(prev => ({
+        ...prev,
+        [name]: value
+      }));
+  
+      if (name === 'title') {
+        const exerciseSuggestions = getUniqueExercises()
+          .filter(ex => ex.name.toLowerCase().includes(value.toLowerCase()));
+        setSuggestions(exerciseSuggestions);
+        setShowSuggestions(exerciseSuggestions.length > 0);
+      }
+    };
+  
     const selectExercise = (exercise) => {
-        setActivity(prev => ({
-          ...prev,
-          title: exercise.name,
-          reps: exercise.reps ? exercise.reps.replace('x', '') : '',
-          weight: exercise.weight ? exercise.weight.replace('kg', '') : ''
-        }));
-        setShowSuggestions(false);
-      };
-
+      setActivity(prev => ({
+        ...prev,
+        title: exercise.name,
+        type: exercise.type || MEASUREMENT_TYPES.COUNT,
+        sets: exercise.sets || [{ reps: '', weight: '' }]
+      }));
+      setShowSuggestions(false);
+    };
+  
+    const addSet = () => {
+      setActivity(prev => ({
+        ...prev,
+        sets: [...prev.sets, 
+          prev.type === MEASUREMENT_TYPES.COUNT 
+            ? { reps: '', weight: '' }
+            : { duration: '', unit: 'sec', weight: '' }
+        ]
+      }));
+    };
+  
+    const updateSet = (index, field, value) => {
+      setActivity(prev => ({
+        ...prev,
+        sets: prev.sets.map((set, i) => 
+          i === index 
+            ? { ...set, [field]: value }
+            : set
+        )
+      }));
+    };
+  
+    const removeSet = (index) => {
+      setActivity(prev => ({
+        ...prev,
+        sets: prev.sets.filter((_, i) => i !== index)
+      }));
+    };
+  
     return (
       <div className="main-block p-6">
         <h1 className="text-4xl font-serif mb-8">New activity</h1>
@@ -325,45 +413,41 @@ const FitnessTracker = () => {
           <div>
             <label className="text-xl block mb-2">Title of activity</label>
             <div className="flex items-center justify-between border-b border-gray-300 pb-2">
-            <input 
-              type="text"
-              name="title"
-              placeholder="Push ups"
-              className="text-xl bg-transparent w-full outline-none"
-              value={activity.title}
-              onChange={handleInputChange}
-              onFocus={() => {
-                const exercises = getUniqueExercises();
-                setSuggestions(exercises);
-                setShowSuggestions(exercises.length > 0);
-              }}
-            />
-            <button
-              onClick={() => setShowSuggestions(prev => !prev)}
-              className="focus:outline-none"
-            >
-              <ChevronRight className="text-[#E97451]" />
-            </button>
-          </div>
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-              {suggestions.map((exercise, index) => (
-                <button
-                  key={index}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-100 focus:outline-none"
-                  onClick={() => selectExercise(exercise)}
-                >
-                  <div className="text-lg">{exercise.name}</div>
-                  <div className="text-sm text-gray-600">
-                    {exercise.reps && `Reps: ${exercise.reps}`}
-                    {exercise.weight && ` Weight: ${exercise.weight}`}
-                  </div>
-                </button>
-              ))}
+              <input 
+                type="text"
+                name="title"
+                placeholder="Push ups"
+                className="text-xl bg-transparent w-full outline-none"
+                value={activity.title}
+                onChange={handleInputChange}
+                onFocus={() => {
+                  const exercises = getUniqueExercises();
+                  setSuggestions(exercises);
+                  setShowSuggestions(exercises.length > 0);
+                }}
+              />
+              <button
+                onClick={() => setShowSuggestions(prev => !prev)}
+                className="focus:outline-none"
+              >
+                <ChevronRight className="text-[#E97451]" />
+              </button>
             </div>
-          )}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                {suggestions.map((exercise, index) => (
+                  <button
+                    key={index}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 focus:outline-none"
+                    onClick={() => selectExercise(exercise)}
+                  >
+                    <div className="text-lg">{exercise.name}</div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-
+  
           <div>
             <label className="text-xl block mb-2">Date</label>
             <input 
@@ -374,34 +458,147 @@ const FitnessTracker = () => {
               onChange={handleInputChange}
             />
           </div>
-
+  
           <div>
-            <label className="text-xl block mb-2">Reps</label>
-            <input 
-              type="text"
-              name="reps"
-              placeholder="20"
-              className="text-xl bg-transparent w-full outline-none border-b border-gray-300 pb-2"
-              value={activity.reps}
-              onChange={handleInputChange}
-            />
+            <label className="text-xl block mb-2">Measurement type</label>
+            <div className="flex gap-4 border-b border-gray-300 pb-2">
+              <button
+                className={`flex items-center gap-2 px-4 py-2 rounded ${
+                  activity.type === MEASUREMENT_TYPES.COUNT 
+                    ? 'bg-[#E97451] text-white' 
+                    : 'bg-gray-200'
+                }`}
+                onClick={() => {
+                  setActivity(prev => ({
+                    ...prev,
+                    type: MEASUREMENT_TYPES.COUNT,
+                    sets: [{ reps: '', weight: '' }]
+                  }));
+                }}
+              >
+                <Hash className="h-5 w-5" />
+                Count
+              </button>
+              <button
+                className={`flex items-center gap-2 px-4 py-2 rounded ${
+                  activity.type === MEASUREMENT_TYPES.TIME 
+                    ? 'bg-[#E97451] text-white' 
+                    : 'bg-gray-200'
+                }`}
+                onClick={() => {
+                  setActivity(prev => ({
+                    ...prev,
+                    type: MEASUREMENT_TYPES.TIME,
+                    sets: [{ duration: '', unit: 'sec', weight: '' }]
+                  }));
+                }}
+              >
+                <Clock className="h-5 w-5" />
+                Time
+              </button>
+            </div>
           </div>
-
-          <div>
-            <label className="text-xl block mb-2">Weight (kg)</label>
-            <input 
-              type="text"
-              name="weight"
-              placeholder="20"
-              className="text-xl bg-transparent w-full outline-none border-b border-gray-300 pb-2"
-              value={activity.weight}
-              onChange={handleInputChange}
-            />
-          </div>
-
+  
+          {activity.sets.map((set, index) => (
+            <div key={index} className="space-y-4">
+              <div className="flex justify-between items-center">
+                <label className="text-xl">Set {index + 1}</label>
+                {index > 0 && (
+                  <button 
+                    onClick={() => removeSet(index)}
+                    className="text-red-500"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+  
+              {activity.type === MEASUREMENT_TYPES.COUNT ? (
+                <div>
+                  <label className="text-xl block mb-2">Reps</label>
+                  <input 
+                    type="number"
+                    className="text-xl bg-transparent w-full outline-none border-b border-gray-300 pb-2"
+                    value={set.reps}
+                    onChange={(e) => updateSet(index, 'reps', e.target.value)}
+                    placeholder="20"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xl block mb-2">Duration</label>
+                    <input 
+                      type="number"
+                      className="text-xl bg-transparent w-full outline-none border-b border-gray-300 pb-2"
+                      value={set.duration}
+                      onChange={(e) => updateSet(index, 'duration', e.target.value)}
+                      placeholder="60"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xl block mb-2">Unit</label>
+                    <select
+                      className="text-xl bg-transparent w-full outline-none border-b border-gray-300 pb-2"
+                      value={set.unit}
+                      onChange={(e) => updateSet(index, 'unit', e.target.value)}
+                    >
+                      {TIME_UNITS.map(unit => (
+                        <option key={unit.value} value={unit.value}>
+                          {unit.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+  
+              <div>
+                <label className="text-xl block mb-2">Weight (kg)</label>
+                <input 
+                  type="number"
+                  className="text-xl bg-transparent w-full outline-none border-b border-gray-300 pb-2"
+                  value={set.weight}
+                  onChange={(e) => updateSet(index, 'weight', e.target.value)}
+                  placeholder="20"
+                />
+              </div>
+            </div>
+          ))}
+  
           <button 
-            className="w-full bg-[#E97451] text-white py-4 rounded-lg text-xl mt-8"
-            onClick={handleCreateNewActivity}
+            onClick={addSet}
+            className="w-full border-2 border-dashed border-gray-300 text-gray-500 py-3 rounded-lg text-xl hover:border-[#E97451] hover:text-[#E97451] transition-colors"
+          >
+            Add set
+          </button>
+  
+          <button 
+            className="w-full bg-[#E97451] text-white py-4 rounded-lg text-xl"
+            onClick={() => {
+              // Сохранение активности
+              const newExercise = {
+                name: activity.title,
+                type: activity.type,
+                sets: activity.sets
+              };
+  
+              const updatedActivities = [...activities];
+              const existingDayIndex = updatedActivities.findIndex(day => day.date === activity.date);
+  
+              if (existingDayIndex !== -1) {
+                updatedActivities[existingDayIndex].exercises.push(newExercise);
+              } else {
+                updatedActivities.push({
+                  date: activity.date,
+                  exercises: [newExercise]
+                });
+              }
+  
+              localStorage.setItem('activities', JSON.stringify(updatedActivities));
+              setActivities(updatedActivities);
+              setCurrentPage('home');
+            }}
           >
             Create
           </button>
@@ -476,24 +673,41 @@ const FitnessTracker = () => {
         
         activities.forEach(day => {
           day.exercises.forEach(exercise => {
-            if (exercise.weight) {
+            // Get maximum weight from all sets for this exercise
+            const maxWeight = Math.max(...(exercise.sets || [])
+              .map(set => parseFloat(set.weight) || 0)
+            );
+            
+            if (maxWeight > 0) {
               if (!exerciseWeights[exercise.name]) {
                 exerciseWeights[exercise.name] = [];
               }
+              
               exerciseWeights[exercise.name].push({
                 date: day.date,
-                weight: parseInt(exercise.weight),
-                formattedDate: formatDate(day.date)
+                weight: maxWeight,
+                formattedDate: formatChartDate(day.date)
               });
             }
           });
         });
-  
-        // Сортируем данные по дате для каждого упражнения
+      
+        // Sort data by date for each exercise
         Object.keys(exerciseWeights).forEach(exercise => {
           exerciseWeights[exercise].sort((a, b) => new Date(a.date) - new Date(b.date));
+          
+          // Remove duplicate dates, keeping the highest weight for each date
+          exerciseWeights[exercise] = exerciseWeights[exercise].reduce((acc, curr) => {
+            const existingEntry = acc.find(entry => entry.date === curr.date);
+            if (!existingEntry) {
+              acc.push(curr);
+            } else if (curr.weight > existingEntry.weight) {
+              existingEntry.weight = curr.weight;
+            }
+            return acc;
+          }, []);
         });
-  
+      
         return exerciseWeights;
       };
   
@@ -585,42 +799,44 @@ const FitnessTracker = () => {
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <h2 className="text-[#E97451] text-lg mb-4">Weight Progress</h2>
             {Object.entries(weightProgressData).map(([exercise, data]) => (
-              <div key={exercise} className="mb-8">
-                <h3 className="text-lg font-medium mb-4">{exercise}</h3>
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={data}>
-                      <XAxis 
-                        dataKey="formattedDate" 
-                        angle={-45} 
-                        textAnchor="end" 
-                        height={80}
-                      />
-                      <YAxis 
-                        label={{ 
-                          value: 'Weight (kg)', 
-                          angle: -90, 
-                          position: 'insideLeft' 
-                        }}
-                      />
-                      <Tooltip />
-                      <Line 
-                        type="monotone" 
-                        dataKey="weight" 
-                        stroke="#E97451" 
-                        strokeWidth={2}
-                        dot={{ fill: '#E97451' }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-                {data.length > 1 && (
-                  <div className="mt-2 text-sm text-gray-600">
-                    Progress: {data[0].weight}kg → {data[data.length - 1].weight}kg
-                    ({((data[data.length - 1].weight - data[0].weight) / data[0].weight * 100).toFixed(1)}% change)
+              data.length > 0 && (
+                <div key={exercise} className="mb-8">
+                  <h3 className="text-lg font-medium mb-4">{exercise}</h3>
+                  <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={data}>
+                        <XAxis 
+                          dataKey="formattedDate" 
+                          angle={-45} 
+                          textAnchor="end" 
+                          height={80}
+                        />
+                        <YAxis 
+                          label={{ 
+                            value: 'Weight (kg)', 
+                            angle: -90, 
+                            position: 'insideLeft' 
+                          }}
+                        />
+                        <Tooltip />
+                        <Line 
+                          type="monotone" 
+                          dataKey="weight" 
+                          stroke="#E97451" 
+                          strokeWidth={2}
+                          dot={{ fill: '#E97451' }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
-                )}
-              </div>
+                  {data.length > 1 && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      Progress: {data[0].weight}kg → {data[data.length - 1].weight}kg
+                      ({((data[data.length - 1].weight - data[0].weight) / data[0].weight * 100).toFixed(1)}% change)
+                    </div>
+                  )}
+                </div>
+              )
             ))}
           </div>
         </div>
