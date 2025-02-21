@@ -1,0 +1,9 @@
+button {
+  cursor: pointer;
+}
+
+.main-block {
+  max-width: 800px;
+  margin: 0 auto;
+  padding-top: 40px;
+}
