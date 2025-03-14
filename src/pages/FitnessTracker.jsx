@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Home, BarChart2, User, ChevronRight, Plus, Edit2, Trash2, Clock, Hash } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Home, BarChart2, User, ChevronRight, Plus, Edit2, Trash2, Clock, Hash, Download, Upload } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+
 const Progress = ({ value }) => (
     <div className="w-full bg-gray-200 rounded-full h-2">
       <div 
@@ -39,46 +40,50 @@ const Progress = ({ value }) => (
   ];
   
 
-const FitnessTracker = () => {
+  const FitnessTracker = () => {
     const [currentPage, setCurrentPage] = useState('home');
-  const [editingActivity, setEditingActivity] = useState(null);
-  const initialActivities = [
-    {
-      date: 'Today',
-      exercises: [
-        { 
-          name: 'Push ups',
-          type: 'count',
-          sets: [
-            { reps: 20, weight: '' },
-            { reps: 15, weight: '' }
-          ]
-        },
+    const [editingActivity, setEditingActivity] = useState(null);
+    const fileInputRef = useRef(null);
+    
+    const initialActivities = [
         {
-          name: 'Plank',
-          type: 'time',
-          sets: [
-            { duration: 60, unit: 'sec' },
-            { duration: 45, unit: 'sec' }
-          ]
+            date: 'Today',
+            exercises: [
+                { 
+                    name: 'Push ups',
+                    type: 'count',
+                    sets: [
+                        { reps: 20, weight: '' },
+                        { reps: 15, weight: '' }
+                    ]
+                },
+                {
+                    name: 'Plank',
+                    type: 'time',
+                    sets: [
+                        { duration: 60, unit: 'sec' },
+                        { duration: 45, unit: 'sec' }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ];
-  
+    ];
 
-  const [activities, setActivities] = useState(initialActivities);
-  const [newActivity, setNewActivity] = useState({
-    title: '',
-    date: '',
-    reps: '',
-    weight: ''
-  });
+    const [activities, setActivities] = useState(initialActivities);
+    const [newActivity, setNewActivity] = useState({
+        title: '',
+        date: '',
+        reps: '',
+        weight: ''
+    });
+    const [importError, setImportError] = useState('');
+    const [exportSuccess, setExportSuccess] = useState(false);
 
-  useEffect(() => {
-    const local = JSON.parse(localStorage.getItem('activities')) || [];
-    setActivities(local.length ? local : initialActivities);
-  }, []);
+    useEffect(() => {
+        const local = JSON.parse(localStorage.getItem('activities')) || [];
+        const localASC = local.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setActivities(localASC.length ? localASC : initialActivities);
+    }, []);
 
   const SetInput = ({ set, index, type, onUpdate, onDelete }) => {
     return (
@@ -136,197 +141,437 @@ const FitnessTracker = () => {
     );
   };
 
-  const HomePage = () => (
-    <div className="main-block p-6">
+  const exportData = () => {
+    const dataStr = JSON.stringify(activities, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `fitness_tracker_export_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setExportSuccess(true);
+    setTimeout(() => setExportSuccess(false), 3000);
+};
+
+
+  const importData = (e) => {
+    setImportError('');
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const importedData = JSON.parse(event.target.result);
+            
+            // Validate the imported data structure
+            if (!Array.isArray(importedData)) {
+                throw new Error('Invalid data format: expected an array');
+            }
+            
+            // Basic validation of each activity
+            importedData.forEach(day => {
+                if (!day.date) throw new Error('Invalid data: missing date field');
+                if (!Array.isArray(day.exercises)) throw new Error('Invalid data: exercises should be an array');
+                
+                day.exercises.forEach(exercise => {
+                    if (!exercise.name) throw new Error('Invalid data: exercise missing name');
+                    if (!exercise.type) throw new Error('Invalid data: exercise missing type');
+                    if (!Array.isArray(exercise.sets)) throw new Error('Invalid data: sets should be an array');
+                });
+            });
+            
+            // Update state and localStorage
+            setActivities(importedData);
+            localStorage.setItem('activities', JSON.stringify(importedData));
+            
+            // Reset file input
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        } catch (error) {
+            console.error('Import error:', error);
+            setImportError(`Import failed: ${error.message}`);
+        }
+    };
+    reader.readAsText(file);
+};
+
+  const ImportExportPanel = () => (
+    <div className="border border-gray-200 rounded-md p-4 mb-6">
+        <h2 className="text-lg font-medium mb-4">Import/Export Data</h2>
+        
+        <div className="flex flex-col gap-4">
+            <div>
+                <button 
+                    onClick={exportData}
+                    className="flex items-center gap-2 bg-[#E97451] text-white py-2 px-4 rounded-md hover:bg-[#D86440] transition-colors"
+                >
+                    <Download className="h-4 w-4" />
+                    Export Data
+                </button>
+                {exportSuccess && (
+                    <p className="text-green-600 text-sm mt-1">Export successful!</p>
+                )}
+            </div>
+            
+            <div>
+                <label className="flex items-center gap-2 bg-gray-100 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-200 transition-colors cursor-pointer">
+                    <Upload className="h-4 w-4" />
+                    Import Data
+                    <input 
+                        type="file" 
+                        accept=".json" 
+                        className="hidden" 
+                        onChange={importData}
+                        ref={fileInputRef}
+                    />
+                </label>
+                {importError && (
+                    <p className="text-red-600 text-sm mt-1">{importError}</p>
+                )}
+            </div>
+        </div>
+    </div>
+);
+
+const HomePage = () => (
+  <div className="main-block p-6">
       <h1 className="text-4xl font-serif mb-8">Trainings</h1>
       
       {activities.map((day, index) => (
-        <div key={index} className="mb-8">
-          <h2 className="text-[#E97451] text-lg mb-4">{formatDate(day.date)}</h2>
-          
-          {day.exercises.map((exercise, exIndex) => (
-            <div key={exIndex} className="mb-4 border-b border-gray-200 pb-4">
-              <div className="flex justify-between items-center">
-                <span className="text-xl">{exercise.name}</span>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    {exercise.type === MEASUREMENT_TYPES.COUNT ? (
-                      <div>
-                        {(exercise.sets || []).map((set, setIndex) => (
-                          <div key={setIndex} className="text-gray-600">
-                            {setIndex === 0 && (
-                              <span className="text-xl">
-                                {(exercise.sets || []).length}x
-                              </span>
-                            )}
-                            <div className="text-sm">
-                              Set {setIndex + 1}: {set.reps} reps
-                              {set.weight && ` (${set.weight}kg)`}
-                            </div>
+          <div key={index} className="mb-8">
+              <h2 className="text-[#E97451] text-lg mb-4">{formatDate(day.date)}</h2>
+              
+              {day.exercises.map((exercise, exIndex) => (
+                  <div key={exIndex} className="mb-4 border-b border-gray-200 pb-4">
+                      <div className="flex justify-between items-center">
+                          <span className="text-xl">{exercise.name}</span>
+                          <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                  {exercise.type === MEASUREMENT_TYPES.COUNT ? (
+                                      <div>
+                                          {(exercise.sets || []).map((set, setIndex) => (
+                                              <div key={setIndex} className="text-gray-600">
+                                                  {setIndex === 0 && (
+                                                      <span className="text-xl">
+                                                          {(exercise.sets || []).length}x
+                                                      </span>
+                                                  )}
+                                                  <div className="text-sm">
+                                                      Set {setIndex + 1}: {set.reps} reps
+                                                      {set.weight && ` (${set.weight}kg)`}
+                                                  </div>
+                                              </div>
+                                          ))}
+                                      </div>
+                                  ) : (
+                                      <div>
+                                          {(exercise.sets || []).map((set, setIndex) => (
+                                              <div key={setIndex} className="text-gray-600">
+                                                  {setIndex === 0 && (
+                                                      <span className="text-xl">
+                                                          {(exercise.sets || []).length}x
+                                                      </span>
+                                                  )}
+                                                  <div className="text-sm">
+                                                      Set {setIndex + 1}: {set.duration} {set.unit}
+                                                      {set.weight && ` (${set.weight}kg)`}
+                                                  </div>
+                                              </div>
+                                          ))}
+                                      </div>
+                                  )}
+                              </div>
+                              <button 
+                                  onClick={() => {
+                                      setEditingActivity({
+                                          dayIndex: index,
+                                          exerciseIndex: exIndex,
+                                          ...exercise,
+                                          date: day.date
+                                      });
+                                      setCurrentPage('edit');
+                                  }}
+                                  className="text-gray-500 hover:text-[#E97451]"
+                              >
+                                  <Edit2 className="h-5 w-5" />
+                              </button>
                           </div>
-                        ))}
                       </div>
-                    ) : (
-                      <div>
-                        {(exercise.sets || []).map((set, setIndex) => (
-                          <div key={setIndex} className="text-gray-600">
-                            {setIndex === 0 && (
-                              <span className="text-xl">
-                                {(exercise.sets || []).length}x
-                              </span>
-                            )}
-                            <div className="text-sm">
-                              Set {setIndex + 1}: {set.duration} {set.unit}
-                              {set.weight && ` (${set.weight}kg)`}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
-                  <button 
-                    onClick={() => {
-                      setEditingActivity({
-                        dayIndex: index,
-                        exerciseIndex: exIndex,
-                        ...exercise,
-                        date: day.date
-                      });
-                      setCurrentPage('edit');
-                    }}
-                    className="text-gray-500 hover:text-[#E97451]"
-                  >
-                    <Edit2 className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              ))}
+          </div>
       ))}
       <button 
-        onClick={() => setCurrentPage('new')}
-        className="fixed bottom-20 right-6 w-14 h-14 bg-[#E97451] rounded-full flex items-center justify-center text-white text-3xl"
+          onClick={() => setCurrentPage('new')}
+          className="fixed bottom-20 right-6  w-14 h-14 bg-[#E97451] rounded-full flex items-center justify-center text-white text-3xl"
       >
-        <Plus />
+          <Plus />
       </button>
-    </div>
-  );
+  </div>
+);
 
-  const EditActivityPage = () => {
-    const [activity, setActivity] = useState({
-      title: editingActivity.name,
-      date: editingActivity.date,
-      reps: editingActivity.reps ? editingActivity.reps.replace('x', '') : '',
-      weight: editingActivity.weight ? editingActivity.weight.replace('kg', '') : ''
-    });
 
-    const handleInputChange = (e) => {
-      const { name, value } = e.target;
-      setActivity(prev => ({
-        ...prev,
-        [name]: value
-      }));
+const EditActivityPage = () => {
+  const [activity, setActivity] = useState({
+    title: editingActivity.name,
+    date: editingActivity.date,
+    type: editingActivity.type || MEASUREMENT_TYPES.COUNT,
+    sets: editingActivity.sets || []
+  });
+
+  const addSet = () => {
+    setActivity(prev => ({
+      ...prev,
+      sets: [...prev.sets, 
+        prev.type === MEASUREMENT_TYPES.COUNT 
+          ? { reps: '', weight: '' }
+          : { duration: '', unit: 'sec', weight: '' }
+      ]
+    }));
+  };
+
+  const updateSet = (index, newSet) => {
+    setActivity(prev => ({
+      ...prev,
+      sets: prev.sets.map((set, i) => 
+        i === index ? newSet : set
+      )
+    }));
+  };
+
+  const removeSet = (index) => {
+    setActivity(prev => ({
+      ...prev,
+      sets: prev.sets.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setActivity(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleUpdateActivity = () => {
+    const updatedActivities = [...activities];
+    const newExercise = {
+      name: activity.title,
+      type: activity.type,
+      sets: activity.sets
     };
 
-    const handleUpdateActivity = () => {
-      const updatedActivities = [...activities];
-      const newExercise = {
-        name: activity.title,
-        reps: activity.reps ? `${activity.reps}x` : null,
-        weight: activity.weight ? `${activity.weight}kg` : '',
-      };
-
-      const existingDay = updatedActivities[editingActivity.dayIndex];
-      existingDay.exercises[editingActivity.exerciseIndex] = newExercise;
-
-      localStorage.setItem('activities', JSON.stringify(updatedActivities));
-      setActivities(updatedActivities);
-      setCurrentPage('home');
-    };
-
-    const handleDeleteActivity = () => {
-      const updatedActivities = [...activities];
+    // Check if date has changed
+    if (activity.date !== editingActivity.date) {
+      // Remove exercise from old day
       updatedActivities[editingActivity.dayIndex].exercises.splice(editingActivity.exerciseIndex, 1);
       
-      // Удаляем день, если упражнений больше нет
+      // Remove day if no exercises left
       if (updatedActivities[editingActivity.dayIndex].exercises.length === 0) {
         updatedActivities.splice(editingActivity.dayIndex, 1);
       }
+      
+      // Add to new day or create new day
+      const existingDayIndex = updatedActivities.findIndex(day => day.date === activity.date);
+      if (existingDayIndex !== -1) {
+        updatedActivities[existingDayIndex].exercises.push(newExercise);
+      } else {
+        updatedActivities.push({
+          date: activity.date,
+          exercises: [newExercise]
+        });
+      }
+    } else {
+      // Update exercise in same day
+      updatedActivities[editingActivity.dayIndex].exercises[editingActivity.exerciseIndex] = newExercise;
+    }
 
-      localStorage.setItem('activities', JSON.stringify(updatedActivities));
-      setActivities(updatedActivities);
-      setCurrentPage('home');
-    };
+    localStorage.setItem('activities', JSON.stringify(updatedActivities));
+    setActivities(updatedActivities);
+    setCurrentPage('home');
+  };
 
-    return (
-      <div className="main-block p-6">
-        <h1 className="text-4xl font-serif mb-8">Edit activity</h1>
-        
-        <div className="space-y-6">
-          <div>
-            <label className="text-xl block mb-2">Title of activity</label>
-            <div className="flex items-center justify-between border-b border-gray-300 pb-2">
+  const handleDeleteActivity = () => {
+    const updatedActivities = [...activities];
+    updatedActivities[editingActivity.dayIndex].exercises.splice(editingActivity.exerciseIndex, 1);
+    
+    // Remove day if no exercises left
+    if (updatedActivities[editingActivity.dayIndex].exercises.length === 0) {
+      updatedActivities.splice(editingActivity.dayIndex, 1);
+    }
+
+    localStorage.setItem('activities', JSON.stringify(updatedActivities));
+    setActivities(updatedActivities);
+    setCurrentPage('home');
+  };
+
+  return (
+    <div className="main-block p-6">
+      <h1 className="text-4xl font-serif mb-8">Edit activity</h1>
+      
+      <div className="space-y-6">
+        <div>
+          <label className="text-xl block mb-2">Title of activity</label>
+          <div className="flex items-center justify-between border-b border-gray-300 pb-2">
+            <input 
+              type="text"
+              name="title"
+              className="text-xl bg-transparent w-full outline-none"
+              value={activity.title}
+              onChange={handleInputChange}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xl block mb-2">Date</label>
+          <input 
+            type="date"
+            name="date"
+            className="text-xl bg-transparent w-full outline-none border-b border-gray-300 pb-2"
+            value={activity.date}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        <div>
+          <label className="text-xl block mb-2">Measurement type</label>
+          <div className="flex gap-4 border-b border-gray-300 pb-2">
+            <button
+              className={`flex items-center gap-2 px-4 py-2 rounded ${
+                activity.type === MEASUREMENT_TYPES.COUNT 
+                  ? 'bg-[#E97451] text-white' 
+                  : 'bg-gray-200'
+              }`}
+              onClick={() => {
+                setActivity(prev => ({
+                  ...prev,
+                  type: MEASUREMENT_TYPES.COUNT,
+                  sets: prev.sets.map(set => ({ reps: set.reps || '', weight: set.weight || '' }))
+                }));
+              }}
+            >
+              <Hash className="h-5 w-5" />
+              Count
+            </button>
+            <button
+              className={`flex items-center gap-2 px-4 py-2 rounded ${
+                activity.type === MEASUREMENT_TYPES.TIME 
+                  ? 'bg-[#E97451] text-white' 
+                  : 'bg-gray-200'
+              }`}
+              onClick={() => {
+                setActivity(prev => ({
+                  ...prev,
+                  type: MEASUREMENT_TYPES.TIME,
+                  sets: prev.sets.map(set => ({ duration: set.duration || '', unit: set.unit || 'sec', weight: set.weight || '' }))
+                }));
+              }}
+            >
+              <Clock className="h-5 w-5" />
+              Time
+            </button>
+          </div>
+        </div>
+
+        {activity.sets.map((set, index) => (
+          <div key={index} className="space-y-4">
+            <div className="flex justify-between items-center">
+              <label className="text-xl">Set {index + 1}</label>
+              {index > 0 && (
+                <button 
+                  onClick={() => removeSet(index)}
+                  className="text-red-500"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
+              )}
+            </div>
+
+            {activity.type === MEASUREMENT_TYPES.COUNT ? (
+              <div>
+                <label className="text-xl block mb-2">Reps</label>
+                <input 
+                  type="number"
+                  className="text-xl bg-transparent w-full outline-none border-b border-gray-300 pb-2"
+                  value={set.reps || ''}
+                  onChange={(e) => updateSet(index, { ...set, reps: e.target.value })}
+                  placeholder="20"
+                />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xl block mb-2">Duration</label>
+                  <input 
+                    type="number"
+                    className="text-xl bg-transparent w-full outline-none border-b border-gray-300 pb-2"
+                    value={set.duration || ''}
+                    onChange={(e) => updateSet(index, { ...set, duration: e.target.value })}
+                    placeholder="60"
+                  />
+                </div>
+                <div>
+                  <label className="text-xl block mb-2">Unit</label>
+                  <select
+                    className="text-xl bg-transparent w-full outline-none border-b border-gray-300 pb-2"
+                    value={set.unit || 'sec'}
+                    onChange={(e) => updateSet(index, { ...set, unit: e.target.value })}
+                  >
+                    {TIME_UNITS.map(unit => (
+                      <option key={unit.value} value={unit.value}>
+                        {unit.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="text-xl block mb-2">Weight (kg)</label>
               <input 
-                type="text"
-                name="title"
-                className="text-xl bg-transparent w-full outline-none"
-                value={activity.title}
-                onChange={handleInputChange}
+                type="number"
+                className="text-xl bg-transparent w-full outline-none border-b border-gray-300 pb-2"
+                value={set.weight || ''}
+                onChange={(e) => updateSet(index, { ...set, weight: e.target.value })}
+                placeholder="20"
               />
             </div>
           </div>
+        ))}
 
-          <div>
-            <label className="text-xl block mb-2">Date</label>
-            <input 
-              type="date"
-              name="date"
-              className="text-xl bg-transparent w-full outline-none border-b border-gray-300 pb-2"
-              value={activity.date}
-              onChange={handleInputChange}
-            />
-          </div>
+        <button 
+          onClick={addSet}
+          className="w-full border-2 border-dashed border-gray-300 text-gray-500 py-3 rounded-lg text-xl hover:border-[#E97451] hover:text-[#E97451] transition-colors"
+        >
+          Add set
+        </button>
 
-          <div>
-            <label className="text-xl block mb-2">Reps</label>
-            <input 
-              type="text"
-              name="reps"
-              className="text-xl bg-transparent w-full outline-none border-b border-gray-300 pb-2"
-              value={activity.reps}
-              onChange={handleInputChange}
-            />
-          </div>
+        <button 
+          className="w-full bg-[#E97451] text-white py-4 rounded-lg text-xl"
+          onClick={handleUpdateActivity}
+        >
+          Update
+        </button>
 
-          <div>
-            <label className="text-xl block mb-2">Weight (kg)</label>
-            <input 
-              type="text"
-              name="weight"
-              className="text-xl bg-transparent w-full outline-none border-b border-gray-300 pb-2"
-              value={activity.weight}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          <button 
-            className="w-full bg-[#E97451] text-white py-4 rounded-lg text-xl"
-            onClick={handleUpdateActivity}
-          >
-            Update
-          </button>
-
-          <button 
-            className="w-full bg-red-500 text-white py-4 rounded-lg text-xl"
-            onClick={handleDeleteActivity}
-          >
-            Delete
-          </button>
-        </div>
+        <button 
+          className="w-full bg-red-500 mb-15 text-white py-4 rounded-lg text-xl"
+          onClick={handleDeleteActivity}
+        >
+          Delete
+        </button>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   const NewActivityPage = () => {
     const [activity, setActivity] = useState({
@@ -574,7 +819,7 @@ const FitnessTracker = () => {
           </button>
   
           <button 
-            className="w-full bg-[#E97451] text-white py-4 rounded-lg text-xl"
+            className="w-full bg-[#E97451] mb-15 text-white py-4 rounded-lg text-xl"
             onClick={() => {
               // Сохранение активности
               const newExercise = {
@@ -636,7 +881,12 @@ const FitnessTracker = () => {
               <Progress value={progressPercentage} />
             </div>
           </div>
+
         </div>
+
+        <br />
+        <ImportExportPanel />
+
       </div>
     );
   };
