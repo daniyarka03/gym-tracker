@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Home, BarChart2, User, ChevronRight, Plus, Edit2, Trash2, Clock, Hash, Download, Upload } from 'lucide-react';
+import { Home, BarChart2, User, ChevronRight, Plus, Edit2, Trash2, Clock, Hash, Download, Upload, NotebookPen } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
 const Progress = ({ value }) => (
@@ -40,9 +40,12 @@ const Progress = ({ value }) => (
   ];
   
 
+
   const FitnessTracker = () => {
     const [currentPage, setCurrentPage] = useState('home');
-    const [editingActivity, setEditingActivity] = useState(null);
+  const [editingActivity, setEditingActivity] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState({ title: '', notes: '', postTitle: '' });
     const fileInputRef = useRef(null);
     
     const initialActivities = [
@@ -239,20 +242,61 @@ const Progress = ({ value }) => (
     </div>
 );
 
+const NotesModal = ({ isOpen, onClose, title, notes, postTitle="" }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-[rgba(0,0,0,0.73)] bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg w-full max-w-md mx-4 overflow-hidden">
+        <div className="p-5 border-b border-gray-200">
+          <h3 className="text-xl font-medium">{title} {postTitle}</h3>
+        </div>
+        <div className="p-5">
+          <p className="text-gray-700 whitespace-pre-wrap">{notes}</p>
+        </div>
+        <div className="p-5 border-t border-gray-200 flex justify-end">
+          <button 
+            onClick={onClose}
+            className="px-4 py-2 bg-[#E97451] text-white rounded-md"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const HomePage = () => (
   <div className="main-block p-6">
+   
       <h1 className="text-4xl font-serif mb-8">Trainings</h1>
-      
       {activities.map((day, index) => (
           <div key={index} className="mb-8">
               <h2 className="text-[#E97451] text-lg mb-4">{formatDate(day.date)}</h2>
-              
-              {day.exercises.map((exercise, exIndex) => (
-                  <div key={exIndex} className="mb-4 border-b border-gray-200 pb-4">
-                      <div className="flex justify-between items-center">
-                          <span className="text-xl">{exercise.name}</span>
-                          <div className="flex items-center gap-4">
-                              <div className="text-right">
+      {day.exercises.map((exercise, exIndex) => (
+  <div key={exIndex} className="mb-4 border-b border-gray-200 pb-4">
+    <div className="flex justify-between items-center">
+      <div className="flex items-center">
+        <span className="text-xl">{exercise.name}</span>
+        {exercise.notes && (
+                <button 
+                  onClick={() => {
+                    setModalContent({
+                      title: exercise.name,
+                      notes: exercise.notes,
+                      postTitle: 'Notes'
+                    });
+                    setModalOpen(true);
+                  }}
+            className="ml-2 text-gray-500 hover:text-[#E97451]"
+          >
+            <NotebookPen className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      <div className="flex items-center gap-4">
+      <div className="text-right">
                                   {exercise.type === MEASUREMENT_TYPES.COUNT ? (
                                       <div>
                                           {(exercise.sets || []).map((set, setIndex) => (
@@ -287,26 +331,26 @@ const HomePage = () => (
                                       </div>
                                   )}
                               </div>
-                              <button 
-                                  onClick={() => {
-                                      setEditingActivity({
-                                          dayIndex: index,
-                                          exerciseIndex: exIndex,
-                                          ...exercise,
-                                          date: day.date
-                                      });
-                                      setCurrentPage('edit');
-                                  }}
-                                  className="text-gray-500 hover:text-[#E97451]"
-                              >
-                                  <Edit2 className="h-5 w-5" />
-                              </button>
-                          </div>
-                      </div>
-                  </div>
-              ))}
-          </div>
-      ))}
+        <button 
+          onClick={() => {
+            setEditingActivity({
+              dayIndex: index,
+              exerciseIndex: exIndex,
+              ...exercise,
+              date: day.date
+            });
+            setCurrentPage('edit');
+          }}
+          className="text-gray-500 hover:text-[#E97451]"
+        >
+          <Edit2 className="h-5 w-5" />
+        </button>
+      </div>
+    </div>
+  </div>
+))}</div>
+))}
+
       <button 
           onClick={() => setCurrentPage('new')}
           className="fixed bottom-20 right-6  w-14 h-14 bg-[#E97451] rounded-full flex items-center justify-center text-white text-3xl"
@@ -316,14 +360,30 @@ const HomePage = () => (
   </div>
 );
 
+const NotesSection = ({ activity, handleInputChange }) => (
+  <div>
+    <label className="text-xl block mb-2">Notes</label>
+    <textarea
+      name="notes"
+      className="w-full p-3 border border-gray-300 rounded-lg min-h-24 text-lg bg-transparent outline-none"
+      placeholder="Add notes about this exercise..."
+      value={activity.notes}
+      onChange={handleInputChange}
+    />
+  </div>
+);
+
 
 const EditActivityPage = () => {
   const [activity, setActivity] = useState({
     title: editingActivity.name,
     date: editingActivity.date,
     type: editingActivity.type || MEASUREMENT_TYPES.COUNT,
-    sets: editingActivity.sets || []
+    sets: editingActivity.sets || [],
+    notes: editingActivity.notes || '' // Add notes field with existing value or empty string
   });
+
+ 
 
   const addSet = () => {
     setActivity(prev => ({
@@ -365,8 +425,10 @@ const EditActivityPage = () => {
     const newExercise = {
       name: activity.title,
       type: activity.type,
-      sets: activity.sets
+      sets: activity.sets,
+      notes: activity.notes // Add notes to the updated exercise
     };
+  
 
     // Check if date has changed
     if (activity.date !== editingActivity.date) {
@@ -440,6 +502,8 @@ const EditActivityPage = () => {
             onChange={handleInputChange}
           />
         </div>
+
+        <NotesSection activity={activity} handleInputChange={handleInputChange} />
 
         <div>
           <label className="text-xl block mb-2">Measurement type</label>
@@ -578,12 +642,15 @@ const EditActivityPage = () => {
       title: '',
       date: new Date().toISOString().split('T')[0],
       type: MEASUREMENT_TYPES.COUNT,
-      sets: [{ reps: '', weight: '' }]
+      sets: [{ reps: '', weight: '' }],
+      notes: '' // Add notes field
     });
   
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
   
+   
+
     const getUniqueExercises = () => {
       const local = JSON.parse(localStorage.getItem('activities')) || [];
       const exercises = local.flatMap(day => 
@@ -743,6 +810,8 @@ const EditActivityPage = () => {
               </button>
             </div>
           </div>
+
+          <NotesSection activity={activity} handleInputChange={handleInputChange} />
   
           {activity.sets.map((set, index) => (
             <div key={index} className="space-y-4">
@@ -821,16 +890,26 @@ const EditActivityPage = () => {
           <button 
             className="w-full bg-[#E97451] mb-15 text-white py-4 rounded-lg text-xl"
             onClick={() => {
+
+              if (activity.title === '') {
+                setModalContent({
+                  title: "Ошибка!",
+                  notes: "Заполните название упражнения"
+                });
+                setModalOpen(true);
+                return;
+              }
               // Сохранение активности
               const newExercise = {
                 name: activity.title,
                 type: activity.type,
-                sets: activity.sets
+                sets: activity.sets,
+                notes: activity.notes // Add notes to the saved exercise
               };
   
               const updatedActivities = [...activities];
               const existingDayIndex = updatedActivities.findIndex(day => day.date === activity.date);
-  
+            
               if (existingDayIndex !== -1) {
                 updatedActivities[existingDayIndex].exercises.push(newExercise);
               } else {
@@ -839,7 +918,7 @@ const EditActivityPage = () => {
                   exercises: [newExercise]
                 });
               }
-  
+            
               localStorage.setItem('activities', JSON.stringify(updatedActivities));
               setActivities(updatedActivities);
               setCurrentPage('home');
@@ -1102,6 +1181,14 @@ const EditActivityPage = () => {
       {currentPage === 'edit' && editingActivity && <EditActivityPage />}
       {currentPage === 'analytics' && <AnalyticsPage />}
       {currentPage === 'profile' && <ProfilePage />}
+
+      <NotesModal 
+        isOpen={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        title={modalContent.title} 
+        notes={modalContent.notes} 
+        postTitle={modalContent.postTitle}
+      />
 
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
         <div className="flex justify-around py-4">
