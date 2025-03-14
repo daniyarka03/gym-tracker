@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Home, BarChart2, User, ChevronRight, Plus, Edit2, Trash2, Clock, Hash, Download, Upload, NotebookPen } from 'lucide-react';
+import { Home, BarChart2, User, ChevronRight, Plus, Edit2, Trash2, ChevronLeft, Clock, Hash, Download, Upload, NotebookPen } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
 const Progress = ({ value }) => (
@@ -996,52 +996,141 @@ const EditActivityPage = () => {
       name: name,
       value: count
     }));
-
-    const prepareWeightProgressData = () => {
-        const exerciseWeights = {};
+    
+    // Данные для календаря
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [calendarView, setCalendarView] = useState('month');
+    
+    const getDaysInMonth = (year, month) => {
+      return new Date(year, month + 1, 0).getDate();
+    };
+    
+    const getFirstDayOfMonth = (year, month) => {
+      return new Date(year, month, 1).getDay();
+    };
+    
+    // Создаем карту дат с тренировками
+    const workoutDates = activities.reduce((acc, day) => {
+      acc[day.date] = day.exercises.length;
+      return acc;
+    }, {});
+    
+    const renderCalendar = () => {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      
+      const daysInMonth = getDaysInMonth(year, month);
+      const firstDay = getFirstDayOfMonth(year, month);
+      
+      // Генерируем массив дней
+      let days = [];
+      for (let i = 1; i <= daysInMonth; i++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        const hasWorkout = workoutDates[dateStr] || 0;
         
-        activities.forEach(day => {
-          day.exercises.forEach(exercise => {
-            // Get maximum weight from all sets for this exercise
-            const maxWeight = Math.max(...(exercise.sets || [])
-              .map(set => parseFloat(set.weight) || 0)
-            );
-            
-            if (maxWeight > 0) {
-              if (!exerciseWeights[exercise.name]) {
-                exerciseWeights[exercise.name] = [];
-              }
-              
-              exerciseWeights[exercise.name].push({
-                date: day.date,
-                weight: maxWeight,
-                formattedDate: formatChartDate(day.date)
-              });
-            }
-          });
+        days.push({
+          day: i,
+          dateStr,
+          hasWorkout
         });
+      }
       
-        // Sort data by date for each exercise
-        Object.keys(exerciseWeights).forEach(exercise => {
-          exerciseWeights[exercise].sort((a, b) => new Date(a.date) - new Date(b.date));
+      // Добавляем дни предыдущего месяца для заполнения первой недели
+      const prevMonthDays = [];
+      if (firstDay > 0) {
+        const prevMonth = month === 0 ? 11 : month - 1;
+        const prevYear = month === 0 ? year - 1 : year;
+        const daysInPrevMonth = getDaysInMonth(prevYear, prevMonth);
+        
+        for (let i = 0; i < firstDay; i++) {
+          const day = daysInPrevMonth - firstDay + i + 1;
+          const dateStr = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const hasWorkout = workoutDates[dateStr] || 0;
           
-          // Remove duplicate dates, keeping the highest weight for each date
-          exerciseWeights[exercise] = exerciseWeights[exercise].reduce((acc, curr) => {
-            const existingEntry = acc.find(entry => entry.date === curr.date);
-            if (!existingEntry) {
-              acc.push(curr);
-            } else if (curr.weight > existingEntry.weight) {
-              existingEntry.weight = curr.weight;
-            }
-            return acc;
-          }, []);
-        });
+          prevMonthDays.push({
+            day,
+            dateStr,
+            hasWorkout,
+            isCurrentMonth: false
+          });
+        }
+      }
       
-        return exerciseWeights;
-      };
+      // Добавляем дни следующего месяца для заполнения последней недели
+      const nextMonthDays = [];
+      const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+      const nextMonth = month === 11 ? 0 : month + 1;
+      const nextYear = month === 11 ? year + 1 : year;
+      
+      for (let i = 1; i <= totalCells - (firstDay + daysInMonth); i++) {
+        const dateStr = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        const hasWorkout = workoutDates[dateStr] || 0;
+        
+        nextMonthDays.push({
+          day: i,
+          dateStr,
+          hasWorkout,
+          isCurrentMonth: false
+        });
+      }
+      
+      return [...prevMonthDays, ...days.map(d => ({ ...d, isCurrentMonth: true })), ...nextMonthDays];
+    };
+    
+    const changeMonth = (delta) => {
+      const newDate = new Date(currentDate);
+      newDate.setMonth(newDate.getMonth() + delta);
+      setCurrentDate(newDate);
+    };
+    
+    const calendarDays = renderCalendar();
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   
-      const weightProgressData = prepareWeightProgressData();
+    const prepareWeightProgressData = () => {
+      const exerciseWeights = {};
+      
+      activities.forEach(day => {
+        day.exercises.forEach(exercise => {
+          // Get maximum weight from all sets for this exercise
+          const maxWeight = Math.max(...(exercise.sets || [])
+            .map(set => parseFloat(set.weight) || 0)
+          );
+          
+          if (maxWeight > 0) {
+            if (!exerciseWeights[exercise.name]) {
+              exerciseWeights[exercise.name] = [];
+            }
+            
+            exerciseWeights[exercise.name].push({
+              date: day.date,
+              weight: maxWeight,
+              formattedDate: formatChartDate(day.date)
+            });
+          }
+        });
+      });
+    
+      // Sort data by date for each exercise
+      Object.keys(exerciseWeights).forEach(exercise => {
+        exerciseWeights[exercise].sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        // Remove duplicate dates, keeping the highest weight for each date
+        exerciseWeights[exercise] = exerciseWeights[exercise].reduce((acc, curr) => {
+          const existingEntry = acc.find(entry => entry.date === curr.date);
+          if (!existingEntry) {
+            acc.push(curr);
+          } else if (curr.weight > existingEntry.weight) {
+            existingEntry.weight = curr.weight;
+          }
+          return acc;
+        }, []);
+      });
+    
+      return exerciseWeights;
+    };
   
+    const weightProgressData = prepareWeightProgressData();
     const COLORS = ['#E97451', '#FF9B84', '#FFB4A2', '#FFCCBE', '#FFE5DC'];
   
     return (
@@ -1060,6 +1149,53 @@ const EditActivityPage = () => {
                 <span className="text-xl">Unique exercises</span>
                 <span className="text-xl font-medium">{uniqueExercises}</span>
               </div>
+            </div>
+          </div>
+  
+          {/* Календарь тренировок */}
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <h2 className="text-[#E97451] text-lg mb-4">Workout Calendar</h2>
+            
+            <div className="flex justify-between items-center mb-4">
+              <button onClick={() => changeMonth(-1)} className="p-2">
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <h3 className="text-xl font-medium">
+                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+              </h3>
+              <button onClick={() => changeMonth(1)} className="p-2">
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-7 gap-1">
+              {weekDays.map(day => (
+                <div key={day} className="text-center p-2 text-gray-500">
+                  {day}
+                </div>
+              ))}
+
+
+              
+              {calendarDays.map((day, index) => (
+                <div 
+                  key={index} 
+                  className={`p-2 text-center rounded-md ${
+                    day.isCurrentMonth 
+                      ? day.hasWorkout > 0
+                        ? 'bg-[#EE9C83] hover:bg-blue-300'
+                        : 'bg-gray-100 hover:bg-gray-200'
+                      : day.hasWorkout > 0
+                        ? 'bg-blue-100 text-gray-500 hover:bg-blue-200'
+                        : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="text-sm">{day.day}</div>
+                  {day.hasWorkout > 0 && (
+                    <div className="text-xs mt-1">{day.hasWorkout}x</div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
   
@@ -1124,7 +1260,7 @@ const EditActivityPage = () => {
               ))}
             </div>
           </div>
-
+  
           <div className="bg-white rounded-lg p-4 shadow-sm">
             <h2 className="text-[#E97451] text-lg mb-4">Weight Progress</h2>
             {Object.entries(weightProgressData).map(([exercise, data]) => (
