@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Home, BarChart2, User, ChevronRight, Plus, Edit2, Trash2, ChevronLeft, Clock, Hash, Download, Upload, NotebookPen } from 'lucide-react';
+import { User, Award, Sparkles, Wand2, Shirt, Crown, Shield, Swords,  Home, BarChart2, ChevronRight, Plus, Edit2, Trash2, ChevronLeft, Clock, Hash, Download, Upload, NotebookPen } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+
+import { Toaster, toast } from 'react-hot-toast';
 
 const Progress = ({ value }) => (
     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -931,41 +933,89 @@ const EditActivityPage = () => {
     );
   };
 
-  const ProfilePage = () => {
-    const totalExercises = activities.reduce((acc, day) => acc + day.exercises.length, 0);
-    const progressPercentage = Math.min((totalExercises / 100) * 100, 100);
 
+
+  const ProfilePage = () => {
+    const [prevLevel, setPrevLevel] = useState(null);
+    
+    const totalExercises = activities.reduce((acc, day) => acc + day.exercises.length, 0);
+    
+    const levels = [
+      { name: "Muggle Beginner", threshold: 0, maxExercises: 10, icon: User, color: "bg-gray-500" },
+      { name: "First-Year Wizard", threshold: 10, maxExercises: 25, icon: Wand2, color: "bg-blue-500" },
+      { name: "Quidditch Apprentice", threshold: 25, maxExercises: 50, icon: Shirt, color: "bg-green-500" },
+      { name: "Triwizard Competitor", threshold: 50, maxExercises: 100, icon: Swords, color: "bg-yellow-500" },
+      { name: "Order of Phoenix Member", threshold: 100, maxExercises: 200, icon: Shield, color: "bg-purple-500" },
+      { name: "Half-Blood Prince", threshold: 200, maxExercises: 300, icon: Crown, color: "bg-red-500" },
+      { name: "Master of Death", threshold: 300, maxExercises: 500, icon: Sparkles, color: "bg-black" }
+    ];
+    
+    const currentLevel = levels.findLast(level => totalExercises >= level.threshold) || levels[0];
+    const nextLevel = levels.find(level => totalExercises < level.threshold) || levels[levels.length - 1];
+    
+    const levelProgress = totalExercises - currentLevel.threshold;
+    const exercisesForNextLevel = nextLevel.threshold - currentLevel.threshold;
+    const levelProgressPercentage = Math.min((levelProgress / exercisesForNextLevel) * 100, 100);
+    
+    const isMaxLevel = currentLevel === levels[levels.length - 1];
+    const currentLevelIndex = levels.indexOf(currentLevel) + 1;
+    const LevelIcon = currentLevel.icon;
+    
+   
     return (
       <div className="p-6">
         <h1 className="text-4xl font-serif mb-8">Profile</h1>
-        
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-[#E97451] rounded-full flex items-center justify-center">
-              <User className="w-8 h-8 text-white" />
+          <div className={`w-16 h-16 ${currentLevel.color} rounded-full flex items-center justify-center`}>
+              <LevelIcon className="w-8 h-8 text-white" />
             </div>
             <div>
               <h2 className="text-2xl font-medium">User</h2>
-              <p className="text-gray-600">Fitness Enthusiast</p>
+              <p className="text-gray-600">Level {currentLevelIndex}: {currentLevel.name}</p>
             </div>
           </div>
-
+  
+          <div className="space-y-4 mb-6">
+            <h3 className="text-lg font-medium">Current Level</h3>
+            <div className="flex items-center gap-2">
+            <div className={`w-12 h-12 ${currentLevel.color} rounded-full flex items-center justify-center text-white font-bold`}>
+                {currentLevelIndex}
+              </div>
+              <span className="text-lg font-medium">{currentLevel.name}</span>
+            </div>
+          </div>
+  
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Progress</h3>
+            <h3 className="text-lg font-medium">Level Progress</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Level Progress</span>
-                <span>{totalExercises}/100 exercises</span>
+                <span>{isMaxLevel ? "Master Level" : `Progress to Level ${currentLevelIndex + 1}`}</span>
+                <span>
+                  {isMaxLevel 
+                    ? `${totalExercises}/${currentLevel.maxExercises} exercises`
+                    : `${levelProgress}/${exercisesForNextLevel} exercises`}
+                </span>
               </div>
-              <Progress value={progressPercentage} />
+              <Progress value={levelProgressPercentage} />
+              {!isMaxLevel && (
+                <p className="text-sm text-gray-500">
+                  Next level: {nextLevel.name} ({nextLevel.threshold} exercises)
+                </p>
+              )}
             </div>
           </div>
-
+          
+          <div className="mt-6 pt-4 border-t">
+            <div className="flex justify-between text-sm">
+              <span>Total Progress</span>
+              <span>{totalExercises} exercises completed</span>
+            </div>
+          </div>
         </div>
-
+  
         <br />
         <ImportExportPanel />
-
       </div>
     );
   };
@@ -1317,6 +1367,7 @@ const EditActivityPage = () => {
       {currentPage === 'edit' && editingActivity && <EditActivityPage />}
       {currentPage === 'analytics' && <AnalyticsPage />}
       {currentPage === 'profile' && <ProfilePage />}
+      <Toaster />
 
       <NotesModal 
         isOpen={modalOpen} 
