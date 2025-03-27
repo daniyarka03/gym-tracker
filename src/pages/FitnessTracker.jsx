@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Sparkles, Wand2, Shirt, Crown, Shield, Swords,  Home, BarChart2, ChevronRight, Plus, Edit2, Trash2, ChevronLeft, Clock, Hash, Download, Upload, NotebookPen } from 'lucide-react';
+import { User, Medal, Sparkles, Wand2, Shirt, Crown, Shield, Swords,  Home, BarChart2, ChevronRight, Plus, Edit2, Trash2, ChevronLeft, Clock, Hash, Download, Upload, NotebookPen } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
 import { Toaster, toast } from 'react-hot-toast';
 
 import {levels} from '../utils/levelsProfile';
 import LevelsModal from "../components/LevelsModal.jsx";
+import {AchievementsPage} from "./AchievementsPage.jsx";
+import {exportToExcel} from "../utils/exportToExcel.js";
 
 const Progress = ({ value }) => (
     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -209,7 +211,7 @@ const Progress = ({ value }) => (
         <h2 className="text-lg font-medium mb-4">Import/Export Data</h2>
         
         <div className="flex flex-col gap-4">
-            <div>
+            <div style={{"width": "150px"}}>
                 <button 
                     onClick={exportData}
                     className="flex items-center gap-2 bg-[#E97451] text-white py-2 px-4 rounded-md hover:bg-[#D86440] transition-colors"
@@ -221,8 +223,21 @@ const Progress = ({ value }) => (
                     <p className="text-green-600 text-sm mt-1">Export successful!</p>
                 )}
             </div>
+
+            <div style={{"width": "150px"}}>
+                <button
+                    onClick={() => exportToExcel(activities)}
+                    className="flex items-center gap-2 bg-[#E97451] text-white py-2 px-4 rounded-md hover:bg-[#D86440] transition-colors"
+                >
+                    <Download className="h-4 w-4" />
+                    Export Data in EXCEL
+                </button>
+                {exportSuccess && (
+                    <p className="text-green-600 text-sm mt-1">Export successful!</p>
+                )}
+            </div>
             
-            <div>
+            <div style={{"width": "145px"}}>
                 <label className="flex items-center gap-2 bg-gray-100 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-200 transition-colors cursor-pointer">
                     <Upload className="h-4 w-4" />
                     Import Data
@@ -988,6 +1003,11 @@ const EditActivityPage = () => {
                 currentLevel={currentLevel}
                 totalExercises={totalExercises}
             />
+
+                <button  onClick={() => setCurrentPage('achievements')} className="achievement-button flex items-center gap-2 bg-[#E97451] text-white py-2 px-4 rounded-md hover:bg-[#D86440] transition-colors">
+                    Achievements <Medal className={`h-6 w-6 ${currentPage === 'achievements' ? 'text-[#E97451]' : ''}`} />
+                </button>
+
   
           <div className="space-y-4 mb-6">
             <h3 className="text-lg font-medium">Current Level</h3>
@@ -1381,6 +1401,7 @@ const EditActivityPage = () => {
       {currentPage === 'edit' && editingActivity && <EditActivityPage />}
       {currentPage === 'analytics' && <AnalyticsPage />}
       {currentPage === 'profile' && <ProfilePage />}
+        {currentPage === 'achievements' && <AchievementsPage activities={activities} />}
       <Toaster />
 
       <NotesModal 
@@ -1411,6 +1432,7 @@ const EditActivityPage = () => {
           >
             <User className={`h-6 w-6 ${currentPage === 'profile' ? 'text-[#E97451]' : ''}`} />
           </button>
+
         </div>
       </div>
     </div>
