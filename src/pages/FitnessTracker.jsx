@@ -4,6 +4,9 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 
 import { Toaster, toast } from 'react-hot-toast';
 
+import {levels} from '../utils/levelsProfile';
+import LevelsModal from "../components/LevelsModal.jsx";
+
 const Progress = ({ value }) => (
     <div className="w-full bg-gray-200 rounded-full h-2">
       <div 
@@ -674,16 +677,36 @@ const EditActivityPage = () => {
         setShowSuggestions(exerciseSuggestions.length > 0);
       }
     };
-  
-    const selectExercise = (exercise) => {
-      setActivity(prev => ({
-        ...prev,
-        title: exercise.name,
-        type: exercise.type || MEASUREMENT_TYPES.COUNT,
-        sets: exercise.sets || [{ reps: '', weight: '' }]
-      }));
-      setShowSuggestions(false);
-    };
+
+      const selectExercise = (exercise) => {
+          // Получаем все локальные активности
+          const local = JSON.parse(localStorage.getItem('activities')) || [];
+
+          // Находим все выполнения этого упражнения, отсортированные по дате
+          const pastExercises = local
+              .filter(day =>
+                  day.exercises.some(ex => ex.name === exercise.name)
+              )
+              .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+          // Находим последнее выполнение упражнения
+          const lastExercisePerformed = pastExercises.length > 0
+              ? pastExercises[0].exercises.find(ex => ex.name === exercise.name)
+              : null;
+
+          // Берем последние наборы подходов, если они есть
+          const lastSets = lastExercisePerformed
+              ? lastExercisePerformed.sets
+              : [{ reps: '', weight: '' }];
+
+          setActivity(prev => ({
+              ...prev,
+              title: exercise.name,
+              type: lastExercisePerformed?.type || exercise.type || MEASUREMENT_TYPES.COUNT,
+              sets: lastSets
+          }));
+          setShowSuggestions(false);
+      };
   
     const addSet = () => {
       setActivity(prev => ({
@@ -933,15 +956,7 @@ const EditActivityPage = () => {
   const ProfilePage = () => {
     const totalExercises = activities.reduce((acc, day) => acc + day.exercises.length, 0);
     
-    const levels = [
-      { name: "Muggle Beginner", threshold: 0, maxExercises: 10, icon: User, color: "bg-gray-500" },
-      { name: "First-Year Wizard", threshold: 10, maxExercises: 25, icon: Wand2, color: "bg-blue-500" },
-      { name: "Quidditch Apprentice", threshold: 25, maxExercises: 50, icon: Shirt, color: "bg-green-500" },
-      { name: "Triwizard Competitor", threshold: 50, maxExercises: 100, icon: Swords, color: "bg-yellow-500" },
-      { name: "Order of Phoenix Member", threshold: 100, maxExercises: 200, icon: Shield, color: "bg-purple-500" },
-      { name: "Half-Blood Prince", threshold: 200, maxExercises: 300, icon: Crown, color: "bg-red-500" },
-      { name: "Master of Death", threshold: 300, maxExercises: 500, icon: Sparkles, color: "bg-black" }
-    ];
+
     
     const currentLevel = levels.findLast(level => totalExercises >= level.threshold) || levels[0];
     const nextLevel = levels.find(level => totalExercises < level.threshold) || levels[levels.length - 1];
@@ -968,6 +983,11 @@ const EditActivityPage = () => {
               <p className="text-gray-600">Level {currentLevelIndex}: {currentLevel.name}</p>
             </div>
           </div>
+
+            <LevelsModal
+                currentLevel={currentLevel}
+                totalExercises={totalExercises}
+            />
   
           <div className="space-y-4 mb-6">
             <h3 className="text-lg font-medium">Current Level</h3>
