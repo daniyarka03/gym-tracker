@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Award, Sparkles, Wand2, Shirt, Crown, Shield, Swords,  Home, BarChart2, ChevronRight, Plus, Edit2, Trash2, ChevronLeft, Clock, Hash, Download, Upload, NotebookPen } from 'lucide-react';
+import { User, Sparkles, Wand2, Shirt, Crown, Shield, Swords,  Home, BarChart2, ChevronRight, Plus, Edit2, Trash2, ChevronLeft, Clock, Hash, Download, Upload, NotebookPen } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
 import { Toaster, toast } from 'react-hot-toast';
@@ -75,12 +75,7 @@ const Progress = ({ value }) => (
     ];
 
     const [activities, setActivities] = useState(initialActivities);
-    const [newActivity, setNewActivity] = useState({
-        title: '',
-        date: '',
-        reps: '',
-        weight: ''
-    });
+
     const [importError, setImportError] = useState('');
     const [exportSuccess, setExportSuccess] = useState(false);
 
@@ -90,61 +85,61 @@ const Progress = ({ value }) => (
         setActivities(localASC.length ? localASC : initialActivities);
     }, []);
 
-  const SetInput = ({ set, index, type, onUpdate, onDelete }) => {
-    return (
-      <div className="flex items-center gap-4 mb-2">
-        <span className="text-sm text-gray-500">Set {index + 1}</span>
-        
-        {type === MEASUREMENT_TYPES.COUNT ? (
-          <>
-            <input
-              type="number"
-              className="w-20 p-2 border rounded"
-              placeholder="Reps"
-              value={set.reps || ''}
-              onChange={(e) => onUpdate(index, { ...set, reps: parseInt(e.target.value) })}
-            />
-            <span>reps</span>
-          </>
-        ) : (
-          <>
-            <input
-              type="number"
-              className="w-20 p-2 border rounded"
-              placeholder="Time"
-              value={set.duration || ''}
-              onChange={(e) => onUpdate(index, { ...set, duration: parseInt(e.target.value) })}
-            />
-            <select
-              className="p-2 border rounded"
-              value={set.unit}
-              onChange={(e) => onUpdate(index, { ...set, unit: e.target.value })}
-            >
-              {TIME_UNITS.map(unit => (
-                <option key={unit.value} value={unit.value}>{unit.label}</option>
-              ))}
-            </select>
-          </>
-        )}
-        
-        <input
-          type="number"
-          className="w-20 p-2 border rounded"
-          placeholder="Weight"
-          value={set.weight || ''}
-          onChange={(e) => onUpdate(index, { ...set, weight: e.target.value })}
-        />
-        <span>kg</span>
-        
-        <button
-          onClick={() => onDelete(index)}
-          className="text-red-500"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </div>
-    );
-  };
+  // const SetInput = ({ set, index, type, onUpdate, onDelete }) => {
+  //   return (
+  //     <div className="flex items-center gap-4 mb-2">
+  //       <span className="text-sm text-gray-500">Set {index + 1}</span>
+  //
+  //       {type === MEASUREMENT_TYPES.COUNT ? (
+  //         <>
+  //           <input
+  //             type="number"
+  //             className="w-20 p-2 border rounded"
+  //             placeholder="Reps"
+  //             value={set.reps || ''}
+  //             onChange={(e) => onUpdate(index, { ...set, reps: parseInt(e.target.value) })}
+  //           />
+  //           <span>reps</span>
+  //         </>
+  //       ) : (
+  //         <>
+  //           <input
+  //             type="number"
+  //             className="w-20 p-2 border rounded"
+  //             placeholder="Time"
+  //             value={set.duration || ''}
+  //             onChange={(e) => onUpdate(index, { ...set, duration: parseInt(e.target.value) })}
+  //           />
+  //           <select
+  //             className="p-2 border rounded"
+  //             value={set.unit}
+  //             onChange={(e) => onUpdate(index, { ...set, unit: e.target.value })}
+  //           >
+  //             {TIME_UNITS.map(unit => (
+  //               <option key={unit.value} value={unit.value}>{unit.label}</option>
+  //             ))}
+  //           </select>
+  //         </>
+  //       )}
+  //
+  //       <input
+  //         type="number"
+  //         className="w-20 p-2 border rounded"
+  //         placeholder="Weight"
+  //         value={set.weight || ''}
+  //         onChange={(e) => onUpdate(index, { ...set, weight: e.target.value })}
+  //       />
+  //       <span>kg</span>
+  //
+  //       <button
+  //         onClick={() => onDelete(index)}
+  //         className="text-red-500"
+  //       >
+  //         <Trash2 className="h-4 w-4" />
+  //       </button>
+  //     </div>
+  //   );
+  // };
 
   const exportData = () => {
     const dataStr = JSON.stringify(activities, null, 2);
@@ -936,8 +931,6 @@ const EditActivityPage = () => {
 
 
   const ProfilePage = () => {
-    const [prevLevel, setPrevLevel] = useState(null);
-    
     const totalExercises = activities.reduce((acc, day) => acc + day.exercises.length, 0);
     
     const levels = [
@@ -963,7 +956,7 @@ const EditActivityPage = () => {
     
    
     return (
-      <div className="p-6">
+      <div className="p-6 main-block">
         <h1 className="text-4xl font-serif mb-8">Profile</h1>
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <div className="flex items-center gap-4 mb-6">
@@ -1049,8 +1042,7 @@ const EditActivityPage = () => {
     
     // Данные для календаря
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [calendarView, setCalendarView] = useState('month');
-    
+
     const getDaysInMonth = (year, month) => {
       return new Date(year, month + 1, 0).getDate();
     };
@@ -1064,39 +1056,41 @@ const EditActivityPage = () => {
       acc[day.date] = day.exercises.length;
       return acc;
     }, {});
-    
+
     const renderCalendar = () => {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
-      
+
       const daysInMonth = getDaysInMonth(year, month);
-      const firstDay = getFirstDayOfMonth(year, month);
-      
+      let firstDay = getFirstDayOfMonth(year, month);
+        // Сдвигаем первый день недели (вс -> 0, пн -> 1 ...)
+      firstDay = firstDay === 0 ? 6 : firstDay - 1;
+
       // Генерируем массив дней
       let days = [];
       for (let i = 1; i <= daysInMonth; i++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
         const hasWorkout = workoutDates[dateStr] || 0;
-        
+
         days.push({
           day: i,
           dateStr,
           hasWorkout
         });
       }
-      
+
       // Добавляем дни предыдущего месяца для заполнения первой недели
       const prevMonthDays = [];
       if (firstDay > 0) {
         const prevMonth = month === 0 ? 11 : month - 1;
         const prevYear = month === 0 ? year - 1 : year;
         const daysInPrevMonth = getDaysInMonth(prevYear, prevMonth);
-        
+
         for (let i = 0; i < firstDay; i++) {
           const day = daysInPrevMonth - firstDay + i + 1;
           const dateStr = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const hasWorkout = workoutDates[dateStr] || 0;
-          
+
           prevMonthDays.push({
             day,
             dateStr,
@@ -1105,17 +1099,17 @@ const EditActivityPage = () => {
           });
         }
       }
-      
+
       // Добавляем дни следующего месяца для заполнения последней недели
       const nextMonthDays = [];
       const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
       const nextMonth = month === 11 ? 0 : month + 1;
       const nextYear = month === 11 ? year + 1 : year;
-      
+
       for (let i = 1; i <= totalCells - (firstDay + daysInMonth); i++) {
         const dateStr = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
         const hasWorkout = workoutDates[dateStr] || 0;
-        
+
         nextMonthDays.push({
           day: i,
           dateStr,
@@ -1123,20 +1117,20 @@ const EditActivityPage = () => {
           isCurrentMonth: false
         });
       }
-      
+
       return [...prevMonthDays, ...days.map(d => ({ ...d, isCurrentMonth: true })), ...nextMonthDays];
     };
-    
+
     const changeMonth = (delta) => {
       const newDate = new Date(currentDate);
       newDate.setMonth(newDate.getMonth() + delta);
       setCurrentDate(newDate);
     };
-    
+
     const calendarDays = renderCalendar();
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  
+    const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
     const prepareWeightProgressData = () => {
       const exerciseWeights = {};
       
@@ -1184,7 +1178,7 @@ const EditActivityPage = () => {
     const COLORS = ['#E97451', '#FF9B84', '#FFB4A2', '#FFCCBE', '#FFE5DC'];
   
     return (
-      <div className="p-6 pb-24">
+      <div className="p-6 pb-24 main-block">
         <h1 className="text-4xl font-serif mb-8">Analytics</h1>
         
         <div className="space-y-6">
