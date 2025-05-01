@@ -4,6 +4,7 @@ import LevelsModal from "../components/LevelsModal.jsx";
 import {Medal} from "lucide-react";
 import ImportExportPanel from "../components/ImportExportPanel.jsx";
 import React, {useState} from "react";
+import {usePageNavigationStore} from "../stores/pageNavigationStore.js";
 
 const Progress = ({value}) => (
     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -17,7 +18,8 @@ const Progress = ({value}) => (
 
 const ProfilePage = ({activities}) => {
     const totalExercises = activities.reduce((acc, day) => acc + day.exercises.length, 0);
-    const [currentPage, setCurrentPage] = useState('profile');
+    const currentPage = usePageNavigationStore((state) => state.currentPage);
+    const setCurrentPage = usePageNavigationStore((state) => state.setCurrentPage);
     const currentLevel = levels.findLast(level => totalExercises >= level.threshold) || levels[0];
     const nextLevel = levels.find(level => totalExercises < level.threshold) || levels[levels.length - 1];
 
