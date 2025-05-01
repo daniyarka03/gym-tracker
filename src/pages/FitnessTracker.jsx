@@ -72,7 +72,7 @@ const FitnessTracker = () => {
 
     return (
         <div className="min-h-screen bg-[#FAF9F6] text-black">
-            {currentPage === 'home' && <HomePage activities={activities}/>}
+            {currentPage === 'home' && <HomePage />}
             {currentPage === 'new' && <NewActivityPage />}
             {currentPage === 'edit' && <EditActivityPage activity={editingActivity} />}
             {currentPage === 'analytics' && <AnalyticsPage activities={activities}/>}

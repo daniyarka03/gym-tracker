@@ -41,7 +41,6 @@ const NewActivityPage = () => {
     ];
 
     const exercises = useExercisesStore((state) => state.exercises);
-    const setExercises = useExercisesStore((state) => state.setExercises);
 
     const [activities, setActivities] = useState(initialActivities);
 
@@ -91,22 +90,18 @@ const NewActivityPage = () => {
     };
 
     const selectExercise = (exercise) => {
-        // Получаем все локальные активности
         const local = JSON.parse(localStorage.getItem('activities')) || [];
 
-        // Находим все выполнения этого упражнения, отсортированные по дате
         const pastExercises = local
             .filter(day =>
                 day.exercises.some(ex => ex.name === exercise.name)
             )
             .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        // Находим последнее выполнение упражнения
         const lastExercisePerformed = pastExercises.length > 0
             ? pastExercises[0].exercises.find(ex => ex.name === exercise.name)
             : null;
 
-        // Берем последние наборы подходов, если они есть
         const lastSets = lastExercisePerformed
             ? lastExercisePerformed.sets
             : [{reps: '', weight: ''}];

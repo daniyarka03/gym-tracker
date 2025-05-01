@@ -127,11 +127,11 @@ const EditActivityPage = () => {
 
     const handleDeleteActivity = () => {
         const updatedActivities = [...activities];
-        updatedActivities[editingActivity.dayIndex].exercises.splice(editingActivity.exerciseIndex, 1);
+        updatedActivities[exercise.dayIndex].exercises.splice(exercise.exerciseIndex, 1);
 
         // Remove day if no exercises left
-        if (updatedActivities[editingActivity.dayIndex].exercises.length === 0) {
-            updatedActivities.splice(editingActivity.dayIndex, 1);
+        if (updatedActivities[exercise.dayIndex].exercises.length === 0) {
+            updatedActivities.splice(exercise.dayIndex, 1);
         }
 
         localStorage.setItem('activities', JSON.stringify(updatedActivities));

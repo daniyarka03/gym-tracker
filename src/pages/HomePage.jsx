@@ -3,8 +3,6 @@ import {NotebookPen, Edit2, Plus} from "lucide-react";
 import {MEASUREMENT_TYPES} from "../utils/constants";
 import {usePageNavigationStore} from "../stores/pageNavigationStore.js";
 import {useModalStore} from "../stores/modalStore.js";
-import NotesModal from "../components/NotesModal.jsx";
-import notesModal from "../components/NotesModal.jsx";
 import {useEditingActivityStore} from "../stores/exercisesStore.js";
 
 const formatDate = (dateStr) => {
@@ -16,19 +14,41 @@ const formatDate = (dateStr) => {
     });
 };
 
-const HomePage = ({activities}) => {
-    const [editingActivity, setEditingActivity] = useState(null);
+const HomePage = () => {
+    const initialActivities = [
+        {
+            date: 'Today',
+            exercises: [
+                {
+                    name: 'Push ups',
+                    type: 'count',
+                    sets: [
+                        {reps: 20, weight: ''},
+                        {reps: 15, weight: ''}
+                    ]
+                },
+                {
+                    name: 'Plank',
+                    type: 'time',
+                    sets: [
+                        {duration: 60, unit: 'sec'},
+                        {duration: 45, unit: 'sec'}
+                    ]
+                }
+            ]
+        }
+    ];
+
+    const [activities, setActivities] = useState(initialActivities);
     const setCurrentPage = usePageNavigationStore((state) => state.setCurrentPage);
     const setModalContent = useModalStore((state) => state.setModalContent);
     const setModalOpen = useModalStore((state) => state.setModalOpen);
-    const isOpen = useModalStore((state) => state.isOpen);
-    const modalTitle = useModalStore((state) => state.title);
-    const modalNotes = useModalStore((state) => state.notes);
     const setExercise = useEditingActivityStore((state) => state.setExercise);
-
     useEffect(() => {
-        console.log(isOpen)
-    }, [])
+        const local = JSON.parse(localStorage.getItem('activities')) || [];
+        const localASC = local.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setActivities(localASC.length ? localASC : initialActivities);
+    }, []);
 
     return (
         <div className="main-block p-6">
@@ -126,8 +146,6 @@ const HomePage = ({activities}) => {
             >
                 <Plus/>
             </button>
-
-
         </div>
     )
 };
