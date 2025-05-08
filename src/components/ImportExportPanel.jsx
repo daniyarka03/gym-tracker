@@ -32,12 +32,10 @@ const ImportExportPanel = ({activities}) => {
             try {
                 const importedData = JSON.parse(event.target.result);
 
-                // Validate the imported data structure
                 if (!Array.isArray(importedData)) {
                     throw new Error('Invalid data format: expected an array');
                 }
 
-                // Basic validation of each activity
                 importedData.forEach(day => {
                     if (!day.date) throw new Error('Invalid data: missing date field');
                     if (!Array.isArray(day.exercises)) throw new Error('Invalid data: exercises should be an array');
@@ -49,10 +47,8 @@ const ImportExportPanel = ({activities}) => {
                     });
                 });
 
-                // Update state and localStorage
                 localStorage.setItem('activities', JSON.stringify(importedData));
 
-                // Reset file input
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }

@@ -13,6 +13,7 @@ import {
     XAxis,
     YAxis
 } from "recharts";
+import {useLocalActivities} from "../hooks/useLocalActivities.js";
 
 
 const formatChartDate = (dateStr) => {
@@ -24,12 +25,8 @@ const formatChartDate = (dateStr) => {
 };
 
 const AnalyticsPage = () => {
-    const [activities, setActivities] = useState([]);
-    useEffect(() => {
-        const local = JSON.parse(localStorage.getItem('activities')) || [];
-        const localASC = local.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setActivities(localASC.length ? localASC : []);
-    }, []);
+    const activities = useLocalActivities();
+
     const totalWorkouts = activities.reduce((acc, day) => acc + day.exercises.length, 0);
     const uniqueExercises = new Set(activities.flatMap(day =>
         day.exercises.map(ex => ex.name)

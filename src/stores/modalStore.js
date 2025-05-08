@@ -1,8 +1,8 @@
 import {create} from 'zustand';
 
 export const useModalStore = create((set) => ({
-    title: "Ошибка!",
-    notes: "Заполните название упражнения",
+    title: "Error!",
+    notes: "Fill the name of exercise!",
     isOpen: false,
     setModalContent: (content) => set(() => ({
         title: content.title,

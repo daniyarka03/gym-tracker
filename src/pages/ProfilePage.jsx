@@ -1,9 +1,10 @@
+import React from "react";
 import {levels} from '../utils/levelsProfile';
 import LevelsModal from "../components/LevelsModal.jsx";
-import {Medal} from "lucide-react";
 import ImportExportPanel from "../components/ImportExportPanel.jsx";
-import React, {useEffect} from "react";
 import {usePageNavigationStore} from "../stores/pageNavigationStore.js";
+import {useLocalActivities} from "../hooks/useLocalActivities.js";
+import {Medal} from "lucide-react";
 
 const Progress = ({value}) => (
     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -14,16 +15,8 @@ const Progress = ({value}) => (
     </div>
 );
 
-
 const ProfilePage = () => {
-
-    const [activities, setActivities] = React.useState([]);
-
-    useEffect(() => {
-        const local = JSON.parse(localStorage.getItem('activities')) || [];
-        const localASC = local.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setActivities(localASC.length ? localASC : []);
-    }, []);
+    const activities = useLocalActivities();
 
     const totalExercises = activities.reduce((acc, day) => acc + day.exercises.length, 0);
     const currentPage = usePageNavigationStore((state) => state.currentPage);
@@ -38,8 +31,6 @@ const ProfilePage = () => {
     const isMaxLevel = currentLevel === levels[levels.length - 1];
     const currentLevelIndex = levels.indexOf(currentLevel) + 1;
     const LevelIcon = currentLevel.icon;
-
-
 
     return (
         <div className="p-6 main-block">

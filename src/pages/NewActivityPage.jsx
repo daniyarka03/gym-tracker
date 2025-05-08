@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-unused-vars
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import {MEASUREMENT_TYPES, TIME_UNITS} from "../utils/constants";
 import {
     ChevronRight,
@@ -10,36 +10,14 @@ import {
 import NotesSection from "../components/NotesSection.jsx";
 import {usePageNavigationStore} from "../stores/pageNavigationStore.js";
 import {useModalStore} from "../stores/modalStore.js";
+import {useLocalActivities} from "../hooks/useLocalActivities.js";
 
 const NewActivityPage = () => {
     const setCurrentPage = usePageNavigationStore((state) => state.setCurrentPage);
     const setModalContent = useModalStore((state) => state.setModalContent);
     const setModalOpen = useModalStore((state) => state.setModalOpen);
-    const initialActivities = [
-        {
-            date: 'Today',
-            exercises: [
-                {
-                    name: 'Push ups',
-                    type: 'count',
-                    sets: [
-                        {reps: 20, weight: ''},
-                        {reps: 15, weight: ''}
-                    ]
-                },
-                {
-                    name: 'Plank',
-                    type: 'time',
-                    sets: [
-                        {duration: 60, unit: 'sec'},
-                        {duration: 45, unit: 'sec'}
-                    ]
-                }
-            ]
-        }
-    ];
 
-    const [activities, setActivities] = useState(initialActivities);
+    const activities = useLocalActivities();
 
     const [activity, setActivity] = useState({
         title: '',
@@ -54,22 +32,18 @@ const NewActivityPage = () => {
 
 
     const getUniqueExercises = () => {
-        const local = JSON.parse(localStorage.getItem('activities')) || [];
-        const exercises = local.flatMap(day =>
+        const exercises = activities.flatMap(day =>
             day.exercises.map(ex => ({
                 name: ex.name,
                 type: ex.type || MEASUREMENT_TYPES.COUNT,
                 sets: ex.sets || []
             }))
         );
+        console.log(exercises);
         return Array.from(new Map(exercises.map(ex => [ex.name, ex])).values());
     };
 
-    useEffect(() => {
-        const local = JSON.parse(localStorage.getItem('activities')) || [];
-        const localASC = local.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setActivities(localASC.length ? localASC : initialActivities);
-    }, []);
+
 
     const handleInputChange = (e) => {
         const {name, value} = e.target;
@@ -345,9 +319,6 @@ const NewActivityPage = () => {
 
                         localStorage.setItem('activities', JSON.stringify(updatedActivities));
 
-                        const updatedActivities2 = updatedActivities.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                        setActivities(updatedActivities2);
                         setCurrentPage('home');
                     }}
                 >

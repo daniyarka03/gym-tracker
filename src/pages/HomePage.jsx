@@ -1,9 +1,10 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {NotebookPen, Edit2, Plus} from "lucide-react";
 import {MEASUREMENT_TYPES} from "../utils/constants";
 import {usePageNavigationStore} from "../stores/pageNavigationStore.js";
 import {useModalStore} from "../stores/modalStore.js";
 import {useEditingActivityStore} from "../stores/exercisesStore.js";
+import {useLocalActivities} from "../hooks/useLocalActivities.js";
 
 const formatDate = (dateStr) => {
     const date = new Date(dateStr);
@@ -15,40 +16,12 @@ const formatDate = (dateStr) => {
 };
 
 const HomePage = () => {
-    const initialActivities = [
-        {
-            date: 'Today',
-            exercises: [
-                {
-                    name: 'Push ups',
-                    type: 'count',
-                    sets: [
-                        {reps: 20, weight: ''},
-                        {reps: 15, weight: ''}
-                    ]
-                },
-                {
-                    name: 'Plank',
-                    type: 'time',
-                    sets: [
-                        {duration: 60, unit: 'sec'},
-                        {duration: 45, unit: 'sec'}
-                    ]
-                }
-            ]
-        }
-    ];
-
-    const [activities, setActivities] = useState(initialActivities);
+    const activities = useLocalActivities();
     const setCurrentPage = usePageNavigationStore((state) => state.setCurrentPage);
     const setModalContent = useModalStore((state) => state.setModalContent);
     const setModalOpen = useModalStore((state) => state.setModalOpen);
     const setExercise = useEditingActivityStore((state) => state.setExercise);
-    useEffect(() => {
-        const local = JSON.parse(localStorage.getItem('activities')) || [];
-        const localASC = local.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setActivities(localASC.length ? localASC : initialActivities);
-    }, []);
+
 
     return (
         <div className="main-block p-6">

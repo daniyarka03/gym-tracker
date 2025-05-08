@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {
     User,
     Home,
@@ -14,51 +14,17 @@ import EditActivityPage from "./EditActivityPage.jsx";
 import AnalyticsPage from "./AnalyticsPage.jsx";
 import ProfilePage from "./ProfilePage.jsx";
 import {usePageNavigationStore} from "../stores/pageNavigationStore.js";
+import {useLocalActivities} from "../hooks/useLocalActivities.js";
 
 const FitnessTracker = () => {
     const currentPage = usePageNavigationStore((state) => state.currentPage);
     const setCurrentPage = usePageNavigationStore((state) => state.setCurrentPage);
-    const [editingActivity, setEditingActivity] = useState(null);
     const isOpenModal = useModalStore((state) => state.isOpen);
     const setModalOpen = useModalStore((state) => state.setModalOpen);
 
-
     const [modalContent, setModalContent] = useState({title: '', notes: '', postTitle: ''});
 
-
-    const initialActivities = [
-        {
-            date: 'Today',
-            exercises: [
-                {
-                    name: 'Push ups',
-                    type: 'count',
-                    sets: [
-                        {reps: 20, weight: ''},
-                        {reps: 15, weight: ''}
-                    ]
-                },
-                {
-                    name: 'Plank',
-                    type: 'time',
-                    sets: [
-                        {duration: 60, unit: 'sec'},
-                        {duration: 45, unit: 'sec'}
-                    ]
-                }
-            ]
-        }
-    ];
-
-    const [activities, setActivities] = useState(initialActivities);
-
-
-
-    useEffect(() => {
-        const local = JSON.parse(localStorage.getItem('activities')) || [];
-        const localASC = local.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setActivities(localASC.length ? localASC : initialActivities);
-    }, []);
+    const activities = useLocalActivities();
 
     return (
         <div className="min-h-screen bg-[#FAF9F6] text-black">

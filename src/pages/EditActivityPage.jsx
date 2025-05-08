@@ -1,43 +1,16 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import {MEASUREMENT_TYPES, TIME_UNITS} from "../utils/constants.js";
 import NotesSection from "../components/NotesSection.jsx";
 import {Clock, Hash, Trash2} from "lucide-react";
 import {usePageNavigationStore} from "../stores/pageNavigationStore.js";
 import {useEditingActivityStore} from "../stores/exercisesStore.js";
+import {useLocalActivities} from "../hooks/useLocalActivities.js";
 
 const EditActivityPage = () => {
-    const initialActivities = [
-        {
-            date: 'Today',
-            exercises: [
-                {
-                    name: 'Push ups',
-                    type: 'count',
-                    sets: [
-                        {reps: 20, weight: ''},
-                        {reps: 15, weight: ''}
-                    ]
-                },
-                {
-                    name: 'Plank',
-                    type: 'time',
-                    sets: [
-                        {duration: 60, unit: 'sec'},
-                        {duration: 45, unit: 'sec'}
-                    ]
-                }
-            ]
-        }
-    ];
-    const setCurrentPage = usePageNavigationStore((state) => state.setCurrentPage);
-    const [activities, setActivities] = useState(initialActivities);
-    const exercise = useEditingActivityStore((state) => state.exercise);
 
-    useEffect(() => {
-        const local = JSON.parse(localStorage.getItem('activities')) || [];
-        const localASC = local.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setActivities(localASC.length ? localASC : initialActivities);
-    }, []);
+    const setCurrentPage = usePageNavigationStore((state) => state.setCurrentPage);
+    const activities = useLocalActivities();
+    const exercise = useEditingActivityStore((state) => state.exercise);
 
     const [activity, setActivity] = useState({
         title: exercise.name,
@@ -115,7 +88,6 @@ const EditActivityPage = () => {
         }
 
         localStorage.setItem('activities', JSON.stringify(updatedActivities));
-        setActivities(updatedActivities);
         setCurrentPage('home');
     };
 
@@ -129,7 +101,6 @@ const EditActivityPage = () => {
         }
 
         localStorage.setItem('activities', JSON.stringify(updatedActivities));
-        setActivities(updatedActivities);
         setCurrentPage('home');
     };
 
