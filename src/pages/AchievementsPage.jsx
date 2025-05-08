@@ -12,42 +12,72 @@ const ACHIEVEMENTS = [
         icon: <Swords color="gold" size={24} />,
         condition: (activities) => activities.length > 0
     },
-    {
-        id: 2,
-        title: "Недельный марафон",
-        description: "Добавь 7 тренировок за неделю",
-        icon: <Swords color="orange" size={24} />,
-        condition: (activities) => {
-            const oneWeekAgo = new Date();
-            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-            const recentActivities = activities.filter(
-                activity => new Date(activity.date) >= oneWeekAgo
-            );
-            return recentActivities.length >= 7;
-        }
-    },
-    {
-        id: 3,
-        title: "Мастер Push-ups",
-        description: "Выполни 100 отжиманий",
-        icon: <Swords color="blue" size={24} />,
-        condition: (activities) => {
-            const totalPushUps = activities.reduce((total, day) => {
-                const pushUpExercises = day.exercises.filter(
-                    ex => ex.name.toLowerCase().includes('push up')
-                );
-                return total + pushUpExercises.reduce((sum, exercise) => {
-                    return sum + exercise.sets.reduce((setSum, set) => setSum + (set.reps || 0), 0);
-                }, 0);
-            }, 0);
-            return totalPushUps >= 100;
-        }
-    }
+    // {
+    //     id: 2,
+    //     title: "Недельный марафон",
+    //     description: "Добавь 7 тренировок за неделю",
+    //     icon: <Swords color="orange" size={24} />,
+    //     condition: (activities) => {
+    //         const oneWeekAgo = new Date();
+    //         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    //         const recentActivities = activities.filter(
+    //             activity => new Date(activity.date) >= oneWeekAgo
+    //         );
+    //         return recentActivities.length >= 7;
+    //     }
+    // },
+    // {
+    //     id: 3,
+    //     title: "Мастер Push-ups",
+    //     description: "Выполни 100 отжиманий",
+    //     icon: <Swords color="blue" size={24} />,
+    //     condition: (activities) => {
+    //         const totalPushUps = activities.reduce((total, day) => {
+    //             const pushUpExercises = day.exercises.filter(
+    //                 ex => ex.name.toLowerCase().includes('push up')
+    //             );
+    //             return total + pushUpExercises.reduce((sum, exercise) => {
+    //                 return sum + exercise.sets.reduce((setSum, set) => setSum + (set.reps || 0), 0);
+    //             }, 0);
+    //         }, 0);
+    //         return totalPushUps >= 100;
+    //     }
+    // }
 ];
 
-export const AchievementsPage = ({ activities }) => {
+export const AchievementsPage = () => {
+    const initialActivities = [
+        {
+            date: 'Today',
+            exercises: [
+                {
+                    name: 'Push ups',
+                    type: 'count',
+                    sets: [
+                        {reps: 20, weight: ''},
+                        {reps: 15, weight: ''}
+                    ]
+                },
+                {
+                    name: 'Plank',
+                    type: 'time',
+                    sets: [
+                        {duration: 60, unit: 'sec'},
+                        {duration: 45, unit: 'sec'}
+                    ]
+                }
+            ]
+        }
+    ];
+
+    const [activities, setActivities] = React.useState([]);
     const [achievements, setAchievements] = useState([]);
 
+    useEffect(() => {
+        const local = JSON.parse(localStorage.getItem('activities')) || [];
+        const localASC = local.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setActivities(localASC.length ? localASC : initialActivities);
+    }, []);
     useEffect(() => {
         // Check and update achievements based on activities
         const updatedAchievements = ACHIEVEMENTS.map(achievement => ({

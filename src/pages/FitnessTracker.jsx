@@ -60,21 +60,11 @@ const FitnessTracker = () => {
         setActivities(localASC.length ? localASC : initialActivities);
     }, []);
 
-    useEffect(() => {
-        console.log('UseEffect: ', isOpenModal)
-    }, [isOpenModal]);
-
-    useEffect(() => {
-        console.log(currentPage);
-    }, [currentPage])
-
-
-
     return (
         <div className="min-h-screen bg-[#FAF9F6] text-black">
             {currentPage === 'home' && <HomePage />}
             {currentPage === 'new' && <NewActivityPage />}
-            {currentPage === 'edit' && <EditActivityPage activity={editingActivity} />}
+            {currentPage === 'edit' && <EditActivityPage />}
             {currentPage === 'analytics' && <AnalyticsPage activities={activities}/>}
             {currentPage === 'profile' && <ProfilePage activities={activities}/>}
             {currentPage === 'achievements' && <AchievementsPage activities={activities}/>}

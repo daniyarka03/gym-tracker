@@ -6,7 +6,6 @@ import {usePageNavigationStore} from "../stores/pageNavigationStore.js";
 import {useEditingActivityStore} from "../stores/exercisesStore.js";
 
 const EditActivityPage = () => {
-    const [editingActivity, setEditingActivity] = useState(null);
     const initialActivities = [
         {
             date: 'Today',
@@ -31,10 +30,8 @@ const EditActivityPage = () => {
         }
     ];
     const setCurrentPage = usePageNavigationStore((state) => state.setCurrentPage);
-
     const [activities, setActivities] = useState(initialActivities);
     const exercise = useEditingActivityStore((state) => state.exercise);
-    console.log("Exercise: ", exercise)
 
     useEffect(() => {
         const local = JSON.parse(localStorage.getItem('activities')) || [];
@@ -88,24 +85,22 @@ const EditActivityPage = () => {
     const handleUpdateActivity = () => {
         const updatedActivities = [...activities];
         const newExercise = {
-            name: exercise.title,
-            type: exercise.type,
-            sets: exercise.sets,
-            notes: exercise.notes // Add notes to the updated exercise
+            name: activity.title,
+            type: activity.type,
+            sets: activity.sets,
+            notes: activity.notes // Add notes to the updated exercise
         };
 
 
         // Check if date has changed
-        if (activity.date !== editingActivity.date) {
+        if (activity.date !== exercise.date) {
             // Remove exercise from old day
-            updatedActivities[editingActivity.dayIndex].exercises.splice(editingActivity.exerciseIndex, 1);
+            updatedActivities[exercise.dayIndex].exercises.splice(exercise.exerciseIndex, 1);
 
-            // Remove day if no exercises left
-            if (updatedActivities[editingActivity.dayIndex].exercises.length === 0) {
-                updatedActivities.splice(editingActivity.dayIndex, 1);
+            if (updatedActivities[exercise.dayIndex].exercises.length === 0) {
+                updatedActivities.splice(exercise.dayIndex, 1);
             }
 
-            // Add to new day or create new day
             const existingDayIndex = updatedActivities.findIndex(day => day.date === activity.date);
             if (existingDayIndex !== -1) {
                 updatedActivities[existingDayIndex].exercises.push(newExercise);
@@ -116,8 +111,7 @@ const EditActivityPage = () => {
                 });
             }
         } else {
-            // Update exercise in same day
-            updatedActivities[editingActivity.dayIndex].exercises[editingActivity.exerciseIndex] = newExercise;
+            updatedActivities[exercise.dayIndex].exercises[exercise.exerciseIndex] = newExercise;
         }
 
         localStorage.setItem('activities', JSON.stringify(updatedActivities));

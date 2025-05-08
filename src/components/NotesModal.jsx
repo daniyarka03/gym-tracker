@@ -6,7 +6,6 @@ const NotesModal = () => {
     const title = useModalStore((state) => state.title);
     const notes = useModalStore((state) => state.notes);
     const setModalOpen = useModalStore((state) => state.setModalOpen);
-    console.log("Modal isOpen:", isOpen); // <--- проверка
     if (!isOpen) return null;
 
     const onCloseModal = () => {

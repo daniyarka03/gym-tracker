@@ -70,7 +70,6 @@ const HomePage = () => {
                                                     postTitle: 'Notes'
                                                 });
                                                 setModalOpen(true);
-                                                console.log(exercise)
                                             }}
                                             className="ml-2 text-gray-500 hover:text-[#E97451]"
                                         >
@@ -122,12 +121,7 @@ const HomePage = () => {
                                                 ...exercise,
                                                 date: day.date
                                             });
-                                            console.log({
-                                                dayIndex: index,
-                                                exerciseIndex: exIndex,
-                                                ...exercise,
-                                                date: day.date
-                                            })
+
                                             setCurrentPage('edit');
                                         }}
                                         className="text-gray-500 hover:text-[#E97451]"

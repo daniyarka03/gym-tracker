@@ -10,7 +10,6 @@ import {
 import NotesSection from "../components/NotesSection.jsx";
 import {usePageNavigationStore} from "../stores/pageNavigationStore.js";
 import {useModalStore} from "../stores/modalStore.js";
-import {useExercisesStore} from "../stores/exercisesStore.js";
 
 const NewActivityPage = () => {
     const setCurrentPage = usePageNavigationStore((state) => state.setCurrentPage);
@@ -39,8 +38,6 @@ const NewActivityPage = () => {
             ]
         }
     ];
-
-    const exercises = useExercisesStore((state) => state.exercises);
 
     const [activities, setActivities] = useState(initialActivities);
 
@@ -326,7 +323,7 @@ const NewActivityPage = () => {
                             setModalOpen(true);
                             return;
                         }
-                        // Сохранение активности
+
                         const newExercise = {
                             name: activity.title,
                             type: activity.type,
@@ -345,8 +342,6 @@ const NewActivityPage = () => {
                                 exercises: [newExercise]
                             });
                         }
-
-                        console.log(exercises)
 
                         localStorage.setItem('activities', JSON.stringify(updatedActivities));
 

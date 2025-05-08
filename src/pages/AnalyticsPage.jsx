@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {ChevronLeft, ChevronRight} from "lucide-react";
 import {
     Bar,
@@ -23,7 +23,13 @@ const formatChartDate = (dateStr) => {
     });
 };
 
-const AnalyticsPage = ({activities}) => {
+const AnalyticsPage = () => {
+    const [activities, setActivities] = useState([]);
+    useEffect(() => {
+        const local = JSON.parse(localStorage.getItem('activities')) || [];
+        const localASC = local.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setActivities(localASC.length ? localASC : []);
+    }, []);
     const totalWorkouts = activities.reduce((acc, day) => acc + day.exercises.length, 0);
     const uniqueExercises = new Set(activities.flatMap(day =>
         day.exercises.map(ex => ex.name)
@@ -39,7 +45,6 @@ const AnalyticsPage = ({activities}) => {
     const mostPopularExercise = Object.entries(exerciseStats)
         .sort(([, a], [, b]) => b - a)[0];
 
-    // Подготовка данных для графиков
     const barChartData = Object.entries(exerciseStats).map(([name, count]) => ({
         name: name,
         count: count
@@ -50,7 +55,6 @@ const AnalyticsPage = ({activities}) => {
         value: count
     }));
 
-    // Данные для календаря
     const [currentDate, setCurrentDate] = useState(new Date());
 
     const getDaysInMonth = (year, month) => {
@@ -61,7 +65,6 @@ const AnalyticsPage = ({activities}) => {
         return new Date(year, month, 1).getDay();
     };
 
-    // Создаем карту дат с тренировками
     const workoutDates = activities.reduce((acc, day) => {
         acc[day.date] = day.exercises.length;
         return acc;
@@ -73,10 +76,8 @@ const AnalyticsPage = ({activities}) => {
 
         const daysInMonth = getDaysInMonth(year, month);
         let firstDay = getFirstDayOfMonth(year, month);
-        // Сдвигаем первый день недели (вс -> 0, пн -> 1 ...)
         firstDay = firstDay === 0 ? 6 : firstDay - 1;
 
-        // Генерируем массив дней
         let days = [];
         for (let i = 1; i <= daysInMonth; i++) {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
@@ -89,7 +90,6 @@ const AnalyticsPage = ({activities}) => {
             });
         }
 
-        // Добавляем дни предыдущего месяца для заполнения первой недели
         const prevMonthDays = [];
         if (firstDay > 0) {
             const prevMonth = month === 0 ? 11 : month - 1;
@@ -110,7 +110,6 @@ const AnalyticsPage = ({activities}) => {
             }
         }
 
-        // Добавляем дни следующего месяца для заполнения последней недели
         const nextMonthDays = [];
         const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
         const nextMonth = month === 11 ? 0 : month + 1;
@@ -146,7 +145,6 @@ const AnalyticsPage = ({activities}) => {
 
         activities.forEach(day => {
             day.exercises.forEach(exercise => {
-                // Get maximum weight from all sets for this exercise
                 const maxWeight = Math.max(...(exercise.sets || [])
                     .map(set => parseFloat(set.weight) || 0)
                 );
@@ -165,11 +163,9 @@ const AnalyticsPage = ({activities}) => {
             });
         });
 
-        // Sort data by date for each exercise
         Object.keys(exerciseWeights).forEach(exercise => {
             exerciseWeights[exercise].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-            // Remove duplicate dates, keeping the highest weight for each date
             exerciseWeights[exercise] = exerciseWeights[exercise].reduce((acc, curr) => {
                 const existingEntry = acc.find(entry => entry.date === curr.date);
                 if (!existingEntry) {
