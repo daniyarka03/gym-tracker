@@ -1,5 +1,5 @@
 import {Download, Upload} from "lucide-react";
-import {exportToExcel} from "../utils/exportToExcel.js";
+import {exportToCSV} from "../utils/exportToExcel.js";
 import React, {useRef, useState} from "react";
 
 const ImportExportPanel = ({activities}) => {
@@ -80,7 +80,7 @@ const ImportExportPanel = ({activities}) => {
 
              <div>
                  <button
-                     onClick={() => exportToExcel(activities)}
+                     onClick={() => exportToCSV(activities)}
                      className="flex items-center gap-2 bg-[#E97451] text-white py-2 px-4 rounded-md hover:bg-[#D86440] transition-colors"
                  >
                      <Download className="h-4 w-4"/>

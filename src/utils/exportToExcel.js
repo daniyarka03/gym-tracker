@@ -1,24 +1,31 @@
-import * as XLSX from 'xlsx';
+export const exportToCSV = (activities) => {
+    const rows = [['Date', 'Exercise', 'Type', 'Reps']];
 
-export const exportToExcel = (activities) => {
-    const excelData = activities.flatMap(day =>
-        day.exercises.map(exercise => ({
-            Date: day.date,
-            Exercise: exercise.name,
-            Type: exercise.type,
-            Reps: exercise.sets.map(set =>
+    activities.forEach(day => {
+        day.exercises.forEach(exercise => {
+            const reps = exercise.sets.map(set =>
                 exercise.type === 'count'
-                    ? `${set.reps} reps. (${set.weight || 'without weight'})`
+                    ? `${set.reps} reps (${set.weight || 'no weight'})`
                     : `${set.duration} ${set.unit}`
-            ).join(', ')
-        }))
+            ).join(', ');
+
+            rows.push([day.date, exercise.name, exercise.type, reps]);
+        });
+    });
+
+    const csvContent = rows.map(row =>
+        row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+
+    const blob = new Blob(
+        ['\uFEFF' + csvContent], // ← UTF-8 BOM
+        { type: 'text/csv;charset=utf-8;' }
     );
 
-    // Create worksheet
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-
-    // Create workbook and export
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Exercises");
-    XLSX.writeFile(workbook, `fitness_tracker_${new Date().toISOString().split('T')[0]}.xlsx`);
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `fitness_tracker_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 };
