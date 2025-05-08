@@ -68,8 +68,8 @@ const ImportExportPanel = ({activities}) => {
      <div className="border border-gray-200 rounded-md p-4 mb-6">
          <h2 className="text-lg font-medium mb-4">Import/Export Data</h2>
 
-         <div className="flex flex-col gap-4">
-             <div style={{"width": "150px"}}>
+         <div className="flex gap-4">
+             <div>
                  <button
                      onClick={exportData}
                      className="flex items-center gap-2 bg-[#E97451] text-white py-2 px-4 rounded-md hover:bg-[#D86440] transition-colors"
@@ -82,7 +82,7 @@ const ImportExportPanel = ({activities}) => {
                  )}
              </div>
 
-             <div style={{"width": "150px"}}>
+             <div>
                  <button
                      onClick={() => exportToExcel(activities)}
                      className="flex items-center gap-2 bg-[#E97451] text-white py-2 px-4 rounded-md hover:bg-[#D86440] transition-colors"
@@ -95,7 +95,7 @@ const ImportExportPanel = ({activities}) => {
                  )}
              </div>
 
-             <div style={{"width": "145px"}}>
+             <div>
                  <label
                      className="flex items-center gap-2 bg-gray-100 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-200 transition-colors cursor-pointer">
                      <Upload className="h-4 w-4"/>
