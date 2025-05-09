@@ -10,7 +10,6 @@
 * [Features](#features)
 * [Installation](#installation)
 * [Technologies](#technologies)
-* [License](#license)
 * [Contact](#contact)
 
 ---
@@ -72,12 +71,6 @@ Gym Tracker is built using the following technologies:
 * **Frontend**: React, Zustand (for state management)
 * **Data Storage**: Local storage with export functionality (JSON/CSV)
 * **Styling**: TailwindCSS
-
----
-
-## License
-
-This project is licensed under the [MIT License](LICENSE)
 
 ---
 
